@@ -1,12 +1,9 @@
 #include <assert.h>
+#include <stdint.h>
 #include <stdio.h>
 
 #include "jtest.h"
 #include "util.h"
-
-
-#define mop(instr, match, mask) ((instr & mask) == match)
-
 
 
 // 0 1 [x1 x2 x3] [y1 y2 y3]
@@ -39,12 +36,31 @@ void ld(uint8_t instr, struct gbstate *s){
     }
 }
 
+void add(uint8_t instr, struct gbstate *s) {
+    uint8_t source;
+    switch (instr) {
+        case 0x80: { source = s->reg[RB]; break; }
+        case 0x81: { source = s->reg[RC]; break; }
+        case 0x82: { source = s->reg[RD]; break; }
+        case 0x83: { source = s->reg[RE]; break; }
+        case 0x84: { source = s->reg[RH]; break; }
+        case 0x85: { source = s->reg[RL]; break; }
+        case 0x86: { assert("unsupported opcode"); break; }
+        case 0x87: { source = s->reg[RA]; break; }
+        default: break;
+    }
+
+    s->reg[RA] += source;
+}
+
 void halt(){
 }
 
-
+#define mop(instr, match, mask) ((instr & mask) == match)
 void step(struct gbstate *s){
     uint8_t instr = s->ram[s->pc++];
     if mop(instr, 0x76, 0xFF) halt();
     else if mop(instr, 0x40, 0xC0) ld(instr, s);
+    else if mop(instr, 0x80, 0xF8) add(instr, s); //no carry
+
 }
