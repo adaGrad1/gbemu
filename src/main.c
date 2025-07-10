@@ -14,6 +14,8 @@
 
 #include "util.h"
 #include "jtest.h"
+#include "main.h"
+
 
 #define SM83_DIR "./sm83/v1/"
 #define WINDOW_TITLE "Game Boy Emulator"
@@ -210,7 +212,7 @@ error:
     return err;
 }
 
-void run_tests(struct sm83_test *tests, size_t count, void *gbm_state) {
+int run_tests(struct sm83_test *tests, size_t count, void *gbm_state) {
     printf("SM83 TESTS: RUNNING\n");
     size_t success_count = 0;
     for (int i = 0; i < count; i++) {
@@ -223,6 +225,7 @@ void run_tests(struct sm83_test *tests, size_t count, void *gbm_state) {
         // printf("\t[%s]: %s\n", current_test.name, pass ? "FAILURE" : "SUCCESS");
     }
     printf("SM83 RESULTS: %zu/%zu\n", success_count, count);
+    return success_count == count;
 }
 
 void dump_rom(struct string *rom_data) {
@@ -234,7 +237,7 @@ void dump_rom(struct string *rom_data) {
     }
     printf("\n");
 }
-
+#define ONLY_TESTS=1;
 int main(void) {
 #ifdef ONLY_TESTS
     char **filenames = calloc(1024, sizeof(char*));
@@ -248,7 +251,9 @@ int main(void) {
 
     struct sm83_test *tests = NULL;
     size_t tests_len = 0;
-    for (size_t i = 0; i < filenames_count && i < 0x7F; i++){
+    uint16_t successes = 0;
+    uint16_t tests_run = 0;
+    for (size_t i = 0; i < filenames_count; i++){
         char* file = malloc(strlen(SM83_DIR) + strlen(filenames[i]) + 1);
         strcpy(file, SM83_DIR);
         strcat(file, filenames[i]);
@@ -257,9 +262,11 @@ int main(void) {
         printf("running test %s\n", filenames[i]);
         // sm83_test_dump(tests, tests_len);
 
-        run_tests(tests, tests_len, NULL);
+        successes += run_tests(tests, tests_len, NULL);
+        tests_run++;
 
     }
+    printf("%d / %d opcodes fully passed tests\n", successes, tests_run);
 #else
     // Game Boy screen: 160px across by 144px
     struct dim vdim = { .w = 160, .h = 144 };

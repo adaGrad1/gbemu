@@ -6,6 +6,8 @@
 
 #include "jtest.h"
 #include "util.h"
+#include "main.h"
 
-void step(struct gbstate *s);
+// Returns the number of CPU cycles taken.
+uint16_t step(gb_t *s);
 #endif // INSTR_H_

@@ -1,6 +1,6 @@
 BUILD_DIR=./build
 CC=gcc
-CFLAGS=-I./include -lraylib
+CFLAGS=-I./include -L/opt/homebrew/lib -I/opt/homebrew/include -lraylib
 
 ifdef RELEASE
 	CFLAGS+=-O2
