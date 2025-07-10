@@ -186,7 +186,7 @@ int parse_file(char *file_path, struct sm83_test **sm83_tests, size_t *length) {
             kvs_append(&st.final.kvs, &kv);
         }
         // ram state
-        cJSON *final_ram = cJSON_GetObjectItemCaseSensitive(initial, "ram");
+        cJSON *final_ram = cJSON_GetObjectItemCaseSensitive(final, "ram");
         if (!cJSON_IsArray(final_ram)) {
             error("Missing 'final', malformed test file %s", file_path);
             err = 4;
