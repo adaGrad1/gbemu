@@ -5,6 +5,16 @@
 #include "util.h"
 #include "instr_helpers.h"
 
+const uint8_t BITS_TO_REG_IDX[] = {
+    RB,
+    RC,
+    RD,
+    RE,
+    RH,
+    RL,
+    255,
+    RA
+};
 
 memgrb get_reg_from_bits(uint8_t bits, gb_t* s) {
     uint16_t cycles = 1;
@@ -23,7 +33,7 @@ memgrb get_reg_from_bits(uint8_t bits, gb_t* s) {
 
 uint16_t set_reg_from_bits(uint8_t idx, uint8_t val, gb_t* s) {
     uint16_t cycles = 1;
-    uint8_t reg_idx = bits_to_reg_idx[idx];
+    uint8_t reg_idx = BITS_TO_REG_IDX[idx];
     uint16_t HL = (s->reg[RH] << 8) + (s->reg[RL]);
     if(reg_idx == 255){
         s->ram[HL] = val;

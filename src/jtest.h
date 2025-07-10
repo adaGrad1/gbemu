@@ -34,6 +34,7 @@ struct sm83_test {
     char *name;
     struct test_gbstate initial;
     struct test_gbstate final;
+    uint16_t n_cycles;
 };
 
 void kvs_reset(struct kvs *kvs);

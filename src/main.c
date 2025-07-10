@@ -202,6 +202,8 @@ int parse_file(char *file_path, struct sm83_test **sm83_tests, size_t *length) {
             rstate.val = rp_t->valueint;
             (void)rams_append(&st.final.rams, &rstate);
         }
+        cJSON *cycles = cJSON_GetObjectItemCaseSensitive(test, "cycles");
+        st.n_cycles = cJSON_GetArraySize(cycles);
 
         sm83ts[test_idx++] = st;
     }
@@ -213,7 +215,6 @@ error:
 }
 
 int run_tests(struct sm83_test *tests, size_t count, void *gbm_state) {
-    printf("SM83 TESTS: RUNNING\n");
     size_t success_count = 0;
     for (int i = 0; i < count; i++) {
         struct sm83_test current_test = tests[i];
@@ -238,12 +239,22 @@ void dump_rom(struct string *rom_data) {
     printf("\n");
 }
 #define ONLY_TESTS=1;
-int main(void) {
+int main(int argc, char* argv[]) {
 #ifdef ONLY_TESTS
     char **filenames = calloc(1024, sizeof(char*));
     size_t filenames_count = 0;
-    test_file_list (filenames, &filenames_count);
-    qsort(filenames, filenames_count, sizeof(char*), cmp_str);
+    if(argc < 2){
+        printf("Running all tests.");
+        test_file_list (filenames, &filenames_count);
+        qsort(filenames, filenames_count, sizeof(char*), cmp_str);
+    } else {
+        printf("Running specified tests.");
+        filenames_count = argc-1;
+        for(int i = 1; i < argc; i++){
+            filenames[i-1] = malloc(sizeof(argv[i]));
+            strcpy(filenames[i-1], argv[i]);
+        }
+    }
 
     printf("Test Files\n");
     for (size_t i = 0; i < filenames_count && i < 10; i++)
@@ -259,7 +270,7 @@ int main(void) {
         strcat(file, filenames[i]);
         parse_file(file, &tests, &tests_len);
         assert (tests != NULL);
-        printf("running test %s\n", filenames[i]);
+        printf("running test %s -- ", filenames[i]);
         // sm83_test_dump(tests, tests_len);
 
         successes += run_tests(tests, tests_len, NULL);

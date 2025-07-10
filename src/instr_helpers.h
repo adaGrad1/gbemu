@@ -9,16 +9,6 @@
 #include "instr.h"
 #include "main.h"
 
-const uint8_t BITS_TO_REG_IDX[] = {
-    RB,
-    RC,
-    RD,
-    RE,
-    RH,
-    RL,
-    255,
-    RA
-};
 
 typedef struct memory_grab {
     uint16_t cycles;

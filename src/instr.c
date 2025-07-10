@@ -5,7 +5,7 @@
 #include "util.h"
 #include "instr_helpers.h"
 
-#define max(a,b) a > b ? a : b;
+#define max(a,b) a > b ? a : b
 
 uint16_t ld(uint8_t instr, gb_t *s) {
     // 0 1 [x1 x2 x3] [y1 y2 y3]
@@ -50,4 +50,5 @@ uint16_t step(gb_t *s) {
     if mop(instr, 0x76, 0xFF) r=halt();
     else if mop(instr, 0x40, 0xC0) r=ld(instr, s);
     else if mop(instr, 0x80, 0xF8) r=add(instr, s); //no carry
+    return r;
 }

@@ -93,8 +93,11 @@ int verify_gbstate_with_test(struct test_gbstate s, struct gbstate s_hat){
 
 int run_sm83_test(struct sm83_test t){
     struct gbstate s = test_gbstate_to_gbstate(t.initial);
-    step(&s);
-    return verify_gbstate_with_test(t.final, s); // 0 = success
+    uint16_t cycle_cost = step(&s);
+    int state_match = verify_gbstate_with_test(t.final, s); // 0 = success
+    int cycle_match = t.n_cycles != cycle_cost; // 0 = success
+    // return cycle_match || state_match;
+    return state_match;
 }
 
 void sm83_test_dump(struct sm83_test *tests, size_t tests_len) {
