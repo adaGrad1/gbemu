@@ -315,6 +315,29 @@ uint16_t arith_i(uint8_t instr, gb_t* s) {
     return 2;
 }
 
+uint16_t add_16(uint8_t instr, gb_t *s) {
+    uint8_t reg_idx = 2 * ((instr >> 4) & 0x03);
+    uint8_t SP_case = (((instr >> 4) & 0x03) == 0x03);
+    uint16_t src;
+    if (SP_case) {
+        src = s->sp;
+    } else {
+        src = get_reg_from_bits(reg_idx, s).val;
+        src <<= 8;
+        src += get_reg_from_bits(reg_idx+1, s).val;
+    }
+    uint16_t tgt = s->reg[RH];
+    tgt <<= 8;
+    tgt += s->reg[RL];
+    uint8_t halfcarry = (tgt & 0x0FFF) + (src & 0x0FFF) > 0x0FFF;
+    uint8_t carry = ((uint32_t) tgt) + ((uint32_t) src) > 0xFFFF;    
+    set_flags(s, LEAVE_BIT_AS_IS, 0, halfcarry, carry);
+
+    tgt = tgt + src;
+    s->reg[RH] = tgt >> 8;
+    s->reg[RL] = tgt & 0xFF;
+    return 2;
+}
 
 uint16_t step(gb_t *s) {
     uint8_t instr = s->ram[s->pc++];
@@ -328,6 +351,7 @@ uint16_t step(gb_t *s) {
     else if mop(instr, 0x04, 0xC7) r=incdec(instr, s);
     else if mop(instr, 0x05, 0xC7) r=incdec(instr, s);
     else if mop(instr, 0x06, 0xC7) r=ldi(instr, s);
+    else if mop(instr, 0x09, 0xCF) r=add_16(instr, s);
     else if mop(instr, 0x40, 0xC0) r=ld(instr, s);
     else if mop(instr, 0x80, 0xF0) r=add(instr, s);
     else if mop(instr, 0x90, 0xF0) r=sub(instr, s);
