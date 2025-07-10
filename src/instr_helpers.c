@@ -47,6 +47,7 @@ uint16_t set_reg_from_bits(uint8_t idx, uint8_t val, gb_t* s) {
     if(reg_idx == 255){
         s->ram[HL] = val;
         cycles = 2;
+
     } else{
         s->reg[reg_idx] = val;
     }
