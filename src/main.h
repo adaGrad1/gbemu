@@ -1,5 +1,6 @@
 #ifndef MAIN_H
 #define MAIN_H
+// #define VERBOSE 1
 #define GBR_LEN 0x10000 /* 4096 */
 #include <stdlib.h>
 

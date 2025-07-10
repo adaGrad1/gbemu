@@ -79,13 +79,30 @@ int verify_gbstate_with_test(struct test_gbstate s, struct gbstate s_hat){
     for(int i = 0; i < k.len; i++){
         struct gbs_kv kv = k.fields[i];
         if(strcmp(kv.k, "sp") == 0){
-            mismatches += (s_hat.sp != kv.v);
+            if(s_hat.sp != kv.v){
+                mismatches++;
+                #ifdef VERBOSE
+                printf("stack pointer failure! %x (pred) != %x (true)\n", s_hat.sp, kv.v);
+                #endif
+            }
+
         } else if (strcmp(kv.k, "pc") == 0){
-            mismatches += (s_hat.pc != kv.v);
+            if(s_hat.pc != kv.v){
+                mismatches++;
+                #ifdef VERBOSE
+                printf("program counter failure! %x (pred) != %x (true)\n", s_hat.pc, kv.v);
+                #endif
+            }
         } else if (strcmp(kv.k, "ime") == 0){
         } else {
             uint8_t reg_idx = key_to_idx[kv.k[0]];
-            mismatches += (s_hat.reg[reg_idx] != kv.v);
+            if(s_hat.reg[reg_idx] != kv.v){
+                mismatches++;
+                #ifdef VERBOSE
+                printf("REG %s failure! %x (pred) != %x (true)\n", kv.k, s_hat.reg[reg_idx], kv.v);
+                #endif
+            }
+
         }
     }
     return mismatches;
@@ -96,8 +113,7 @@ int run_sm83_test(struct sm83_test t){
     uint16_t cycle_cost = step(&s);
     int state_match = verify_gbstate_with_test(t.final, s); // 0 = success
     int cycle_match = t.n_cycles != cycle_cost; // 0 = success
-    // return cycle_match || state_match;
-    return state_match;
+    return cycle_match || state_match;
 }
 
 void sm83_test_dump(struct sm83_test *tests, size_t tests_len) {

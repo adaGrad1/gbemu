@@ -271,8 +271,9 @@ int main(int argc, char* argv[]) {
         parse_file(file, &tests, &tests_len);
         assert (tests != NULL);
         printf("running test %s -- ", filenames[i]);
-        // sm83_test_dump(tests, tests_len);
-
+#ifdef VERBOSE
+        sm83_test_dump(tests, tests_len);
+#endif
         successes += run_tests(tests, tests_len, NULL);
         tests_run++;
 
