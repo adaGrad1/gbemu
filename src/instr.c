@@ -279,10 +279,18 @@ uint16_t cb(uint8_t _, gb_t *s) {
     return cycles;
 }
 
+uint16_t ra(uint8_t instr, gb_t* s) {
+    s->pc--;
+    cb(instr, s);
+    set_flags(s, 0, LEAVE_BIT_AS_IS, LEAVE_BIT_AS_IS, LEAVE_BIT_AS_IS);
+    return 1;
+}
+
 uint16_t step(gb_t *s) {
     uint8_t instr = s->ram[s->pc++];
     uint16_t r;
     if      mop(instr, 0x00, 0xEF) r=1; // nop or stop -- TODO reset-related??
+    else if mop(instr, 0x07, 0xE7) r=ra(instr, s);
     else if mop(instr, 0x01, 0xCF) r=ldi_16(instr, s);
     else if mop(instr, 0x76, 0xFF) r=halt();
     else if mop(instr, 0x02, 0xC7) r=ld_ext(instr, s);
