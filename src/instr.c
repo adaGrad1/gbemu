@@ -339,12 +339,31 @@ uint16_t add_16(uint8_t instr, gb_t *s) {
     return 2;
 }
 
+uint16_t scf(uint8_t instr, gb_t *s){
+    set_flags(s, LEAVE_BIT_AS_IS, 0, 0, 1);
+    return 1;
+}
+
+uint16_t ccf(uint8_t instr, gb_t *s){
+    set_flags(s, LEAVE_BIT_AS_IS, 0, 0, !get_bit(s->reg[RF], CARRY_FLAG_BIT));
+    return 1;
+}
+
+uint16_t cpl(uint8_t instr, gb_t *s){
+    set_flags(s, LEAVE_BIT_AS_IS, 1, 1, LEAVE_BIT_AS_IS);
+    s->reg[RA] = ~(s->reg[RA]);
+    return 1;
+}
+
 uint16_t step(gb_t *s) {
     uint8_t instr = s->ram[s->pc++];
     uint16_t r;
     if      mop(instr, 0x00, 0xEF) r=1; // nop or stop -- TODO reset-related??
     else if mop(instr, 0x07, 0xE7) r=ra(instr, s);
     else if mop(instr, 0x01, 0xCF) r=ldi_16(instr, s);
+    else if mop(instr, 0x37, 0xFF) r=scf(instr, s);
+    else if mop(instr, 0x2F, 0xFF) r=cpl(instr, s);
+    else if mop(instr, 0x3F, 0xFF) r=ccf(instr, s);
     else if mop(instr, 0x76, 0xFF) r=halt();
     else if mop(instr, 0x02, 0xC7) r=ld_ext(instr, s);
     else if mop(instr, 0x03, 0xC7) r=incdec_16(instr, s);
