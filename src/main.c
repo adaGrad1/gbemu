@@ -271,12 +271,12 @@ int main(int argc, char* argv[]) {
         parse_file(file, &tests, &tests_len);
         assert (tests != NULL);
         printf("running test %s -- ", filenames[i]);
-#ifdef VERBOSE
+        #ifdef VERBOSE
         sm83_test_dump(tests, tests_len);
-#endif
+        tests_len = 10;
+        #endif
         successes += run_tests(tests, tests_len, NULL);
         tests_run++;
-
     }
     printf("%d / %d opcodes fully passed tests\n", successes, tests_run);
 #else

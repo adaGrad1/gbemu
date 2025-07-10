@@ -4,6 +4,7 @@
 #include "jtest.h"
 #include "util.h"
 #include "instr_helpers.h"
+#define mop(instr, match, mask) ((instr & mask) == match)
 
 #define max(a,b) a > b ? a : b
 uint16_t halt() {return 1;} // TODO reset-related??
@@ -109,7 +110,42 @@ uint16_t cp(uint8_t instr, gb_t *s) { // equivalent to a subtraction without upd
     return cycles;
 }
 
-#define mop(instr, match, mask) ((instr & mask) == match)
+void cb_bit(uint8_t ri, uint8_t instr, gb_t *s){
+    uint8_t bit_idx = (instr >> 3) & 0x07;
+    uint8_t reg_val = get_reg_from_bits(ri, s).val;
+    set_flags(s, !get_bit(reg_val, bit_idx), 0, 1, LEAVE_BIT_AS_IS);
+}
+
+
+void cb_res(uint8_t ri, uint8_t instr, gb_t *s){
+    uint8_t bit_idx = (instr >> 3) & 0x07;
+    uint8_t reg_val = get_reg_from_bits(ri, s).val;
+    reg_val &= ~(1 << bit_idx);
+    set_reg_from_bits(ri, reg_val, s);
+}
+void cb_set(uint8_t ri, uint8_t instr, gb_t *s){
+    uint8_t bit_idx = (instr >> 3) & 0x07;
+    uint8_t reg_val = get_reg_from_bits(ri, s).val;
+    reg_val |= (1 << bit_idx);
+    set_reg_from_bits(ri, reg_val, s);
+}
+
+uint16_t cb(uint8_t _, gb_t *s) {
+    uint8_t instr = s->ram[s->pc++];
+    uint16_t cycles = 2;
+    if ((instr & 0x07) == 0x06) { // instr involves RAM
+        if((instr & 0xC0) == 0x40) cycles = 3; // only READ from RAM
+        else cycles = 4; // READ and WRITE to RAM
+    }
+    uint8_t ri = instr & 0x07;
+    if      mop(instr, 0x00, 0xE0) 0;
+    else if mop(instr, 0x40, 0xC0) cb_bit(ri, instr, s);
+    else if mop(instr, 0x80, 0xC0) cb_res(ri, instr, s);
+    else if mop(instr, 0xC0, 0xC0) cb_set(ri, instr, s);
+    
+    return cycles;
+}
+
 uint16_t step(gb_t *s) {
     uint8_t instr = s->ram[s->pc++];
     uint16_t r;
@@ -126,5 +162,6 @@ uint16_t step(gb_t *s) {
     else if mop(instr, 0xA8, 0xF8) r=xor(instr, s);
     else if mop(instr, 0xB0, 0xF8) r=or(instr, s);
     else if mop(instr, 0xB8, 0xF8) r=cp(instr, s);
+    else if mop(instr, 0xCB, 0xFF) r=cb(instr, s);
     return r;
 }
