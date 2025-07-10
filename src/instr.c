@@ -9,6 +9,24 @@
 #define max(a,b) a > b ? a : b
 uint16_t halt() {return 1;} // TODO reset-related??
 
+uint16_t incdec_16(uint8_t instr, gb_t *s) {
+    uint8_t reg_idx = 2 * ((instr >> 4) & 0x03);
+    int16_t delta = 1 - 2 * !!(instr & 0x8);
+    uint8_t SP_case = (((instr >> 4) & 0x03) == 0x03);
+    if (SP_case) {
+        s->sp += delta;
+    } else {
+        uint16_t val = get_reg_from_bits(reg_idx, s).val;
+        val <<= 8;
+        val += get_reg_from_bits(reg_idx+1, s).val;
+        val += delta;
+        set_reg_from_bits(reg_idx, val >> 8, s);
+        set_reg_from_bits(reg_idx+1, val & 0x00FF, s);
+    }
+    return 2;
+}
+
+
 uint16_t incdec(uint8_t instr, gb_t *s) {
     uint8_t reg_idx = (instr >> 3) & 0x07;
     uint8_t delta = 1 - 2 * (instr & 0x01);
@@ -294,6 +312,7 @@ uint16_t step(gb_t *s) {
     else if mop(instr, 0x01, 0xCF) r=ldi_16(instr, s);
     else if mop(instr, 0x76, 0xFF) r=halt();
     else if mop(instr, 0x02, 0xC7) r=ld_ext(instr, s);
+    else if mop(instr, 0x03, 0xC7) r=incdec_16(instr, s);
     else if mop(instr, 0x04, 0xC7) r=incdec(instr, s);
     else if mop(instr, 0x05, 0xC7) r=incdec(instr, s);
     else if mop(instr, 0x06, 0xC7) r=ldi(instr, s);
