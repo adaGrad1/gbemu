@@ -112,7 +112,8 @@ uint16_t sub(uint8_t instr, gb_t *s) {
     uint8_t carry_to_include = (instr & 0x08) * get_bit(s->reg[RF], CARRY_FLAG_BIT);
     uint8_t carry = s->reg[RA] < (source.val + carry_to_include);
     uint8_t halfcarry = (s->reg[RA] & 0x0F) < (source.val & 0x0F) + carry_to_include;
-    s->reg[RA] -= source.val + carry_to_include;
+    printf("%x, %x, %x\n", carry_to_include, carry, halfcarry);
+    s->reg[RA] -= (source.val + carry_to_include);
     set_flags(s, !s->reg[RA], 1, halfcarry, carry);
     return source.cycles;
 }
@@ -304,6 +305,18 @@ uint16_t ra(uint8_t instr, gb_t* s) {
     return 1;
 }
 
+uint16_t arith_i(uint8_t instr, gb_t* s) {
+    uint8_t b_tmp = s->reg[RB];
+    uint8_t ins_tmp = s->ram[s->pc];
+    s->reg[RB] = s->ram[s->pc];
+    s->ram[s->pc] = (instr & 0xB8);
+    step(s);
+    s->reg[RB] = b_tmp;
+    s->ram[s->pc-1] = ins_tmp;
+    return 2;
+}
+
+
 uint16_t step(gb_t *s) {
     uint8_t instr = s->ram[s->pc++];
     uint16_t r;
@@ -321,6 +334,7 @@ uint16_t step(gb_t *s) {
     else if mop(instr, 0x90, 0xF0) r=sub(instr, s);
     else if mop(instr, 0xA0, 0xF8) r=and(instr, s);
     else if mop(instr, 0xA8, 0xF8) r=xor(instr, s);
+    else if mop(instr, 0xC6, 0xC7) r=arith_i(instr, s);
     else if mop(instr, 0xB0, 0xF8) r=or(instr, s);
     else if mop(instr, 0xB8, 0xF8) r=cp(instr, s);
     else if mop(instr, 0xCB, 0xFF) r=cb(instr, s);
