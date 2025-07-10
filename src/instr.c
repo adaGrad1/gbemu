@@ -46,8 +46,27 @@ uint16_t ld_ext(uint8_t instr, gb_t *s) {
     return 2; // TODO
 }
 
+uint16_t ldi_16(uint8_t instr, gb_t *s) {
+    uint16_t val = s->ram[s->pc+1];
+    val <<= 8;
+    val += s->ram[s->pc];
+    s->pc+=2;
+
+    uint8_t reg_idx = 2 * ((instr >> 4) & 0x03);
+    uint8_t SP_case = (((instr >> 4) & 0x03) == 0x03);
+    if (SP_case) {
+        s->sp = val;
+    } else {
+        set_reg_from_bits(reg_idx, val >> 8, s);
+        set_reg_from_bits(reg_idx+1, val & 0x00FF, s);
+    }
+
+    return 3;
+}
+
+
 uint16_t ldi(uint8_t instr, gb_t *s) {
-    uint8_t reg_idx = (instr & 0x38) >> 3; // bits 
+    uint8_t reg_idx = (instr >> 3) & 0x07; // bits 
     uint8_t val = s->ram[s->pc++];
     return 1+set_reg_from_bits(reg_idx, val, s);
 }
@@ -92,7 +111,6 @@ uint16_t xor(uint8_t instr, gb_t *s) {
     s->reg[RA] ^= source.val;
     set_flags(s, !s->reg[RA], 0, 0, 0);
     return source.cycles;
-
 }
 
 uint16_t or(uint8_t instr, gb_t *s) {
@@ -130,6 +148,114 @@ void cb_set(uint8_t ri, uint8_t instr, gb_t *s){
     set_reg_from_bits(ri, reg_val, s);
 }
 
+void cb_shift_rotate(uint8_t ri, gb_t* s, uint8_t left, uint8_t from_carry, uint8_t rotate, uint8_t signed_shr){
+    uint8_t v = get_reg_from_bits(ri, s).val;
+    uint8_t new_carry;
+    if (left) {
+        new_carry = get_bit(v, 7);
+        v <<= 1;
+        if (rotate) {
+            set_bit(v, 0, new_carry);
+        } else if (from_carry) {
+            set_bit(v, 0, get_bit(s->reg[RF], CARRY_FLAG_BIT));
+        }
+    }
+    else {
+        new_carry = get_bit(v, 0);
+        v >>= 1;
+        if (rotate) {
+            set_bit(v, 7, new_carry);
+        } else if (from_carry) {
+            set_bit(v, 7, get_bit(s->reg[RF], CARRY_FLAG_BIT));
+        } else if (signed_shr) {
+                set_bit(v, 7, (get_bit(v, 6)));
+        }
+    }
+    set_reg_from_bits(ri, v, s);
+    set_flags(s, !v, 0, 0, new_carry);
+}
+
+void rlc(uint8_t ri, uint8_t instr, gb_t *s){
+    cb_shift_rotate(ri, s, 1, 0, 1, 0);
+}
+
+void rrc(uint8_t ri, uint8_t instr, gb_t *s){
+    cb_shift_rotate(ri, s, 0, 0, 1, 0);
+}
+
+void rl(uint8_t ri, uint8_t instr, gb_t *s){
+    cb_shift_rotate(ri, s, 1, 1, 0, 0);
+}
+
+void rr(uint8_t ri, uint8_t instr, gb_t *s){
+    cb_shift_rotate(ri, s, 0, 1, 0, 0);
+}
+
+void sl(uint8_t ri, uint8_t instr, gb_t *s){
+    cb_shift_rotate(ri, s, 1, 0, 0, 0);
+}
+
+void sr(uint8_t ri, uint8_t instr, gb_t *s){
+    cb_shift_rotate(ri, s, 0, 0, 0, 1);
+}
+
+void swap(uint8_t ri, uint8_t instr, gb_t *s){
+    uint8_t new = 0;
+    uint8_t old = get_reg_from_bits(ri, s).val;
+    new += old >> 4;
+    new += old << 4;
+    set_reg_from_bits(ri, new, s);
+    set_flags(s, !new, 0, 0, 0);
+}
+
+void srl(uint8_t ri, uint8_t instr, gb_t *s){
+    cb_shift_rotate(ri, s, 0, 0, 0, 0);
+}
+
+uint16_t pop(uint8_t instr, gb_t *s) 
+{   
+    uint8_t reg_idx = 2 * ((instr >> 4) & 0x03);
+    uint8_t AF_case = (((instr >> 4) & 0x03) == 0x03);
+    if(AF_case) {
+        s->reg[RF] = s->ram[s->sp++] & 0xF0;
+        s->reg[RA] = s->ram[s->sp++];
+    } else {
+        set_reg_from_bits(reg_idx+1, s->ram[s->sp++], s);
+        set_reg_from_bits(reg_idx, s->ram[s->sp++], s);
+    }
+    return 3;
+}
+
+uint16_t push(uint8_t instr, gb_t *s) 
+{   
+    uint8_t reg_idx = 2 * ((instr >> 4) & 0x03);
+    uint8_t AF_case = (((instr >> 4) & 0x03) == 0x03);
+    if(AF_case) {
+        reg_idx += 1;
+    }
+        s->ram[--(s->sp)] = get_reg_from_bits(reg_idx, s).val;
+        s->ram[--(s->sp)] = get_reg_from_bits(reg_idx+1, s).val;
+    return 4;
+}
+
+// void _ret(gb_t* s){
+//     s->pc = s->ram[(s->sp)++];
+//     s->pc <<= 8;
+//     s->pc += s->ram[(s->sp)++];
+// }
+
+void _call(uint16_t addr, gb_t* s){
+    s->ram[--(s->sp)] = s->pc >> 8;
+    s->ram[--(s->sp)] = s->pc;
+    s->pc = addr;
+}
+
+// RST is 1 1 [o1 o2 o3] 1 1 1
+uint16_t rst(uint8_t instr, gb_t *s) {
+    _call(instr & 0x38, s);
+    return 4;
+}
+
 uint16_t cb(uint8_t _, gb_t *s) {
     uint8_t instr = s->ram[s->pc++];
     uint16_t cycles = 2;
@@ -138,11 +264,18 @@ uint16_t cb(uint8_t _, gb_t *s) {
         else cycles = 4; // READ and WRITE to RAM
     }
     uint8_t ri = instr & 0x07;
-    if      mop(instr, 0x00, 0xE0) 0;
-    else if mop(instr, 0x40, 0xC0) cb_bit(ri, instr, s);
+    if      mop(instr, 0x40, 0xC0) cb_bit(ri, instr, s);
     else if mop(instr, 0x80, 0xC0) cb_res(ri, instr, s);
     else if mop(instr, 0xC0, 0xC0) cb_set(ri, instr, s);
-    
+    // instr is 0x00, 0x08, 0x10, 0x18, 0x20, 0x28, 0x30, 0x38
+    else if mop(instr, 0x00, 0x38) rlc(ri, instr, s);
+    else if mop(instr, 0x08, 0x38) rrc(ri, instr, s);
+    else if mop(instr, 0x10, 0x38) rl(ri, instr, s);
+    else if mop(instr, 0x18, 0x38) rr(ri, instr, s);
+    else if mop(instr, 0x20, 0x38) sl(ri, instr, s);
+    else if mop(instr, 0x28, 0x38) sr(ri, instr, s);
+    else if mop(instr, 0x30, 0x38) swap(ri, instr, s);
+    else if mop(instr, 0x38, 0x38) srl(ri, instr, s);
     return cycles;
 }
 
@@ -150,6 +283,7 @@ uint16_t step(gb_t *s) {
     uint8_t instr = s->ram[s->pc++];
     uint16_t r;
     if      mop(instr, 0x00, 0xEF) r=1; // nop or stop -- TODO reset-related??
+    else if mop(instr, 0x01, 0xCF) r=ldi_16(instr, s);
     else if mop(instr, 0x76, 0xFF) r=halt();
     else if mop(instr, 0x02, 0xC7) r=ld_ext(instr, s);
     else if mop(instr, 0x04, 0xC7) r=incdec(instr, s);
@@ -163,5 +297,8 @@ uint16_t step(gb_t *s) {
     else if mop(instr, 0xB0, 0xF8) r=or(instr, s);
     else if mop(instr, 0xB8, 0xF8) r=cp(instr, s);
     else if mop(instr, 0xCB, 0xFF) r=cb(instr, s);
+    else if mop(instr, 0xC1, 0xCF) r=pop(instr, s);
+    else if mop(instr, 0xC5, 0xCF) r=push(instr, s);
+    else if mop(instr, 0xC7, 0xC7) r=rst(instr, s);
     return r;
 }

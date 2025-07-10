@@ -73,7 +73,12 @@ int verify_gbstate_with_test(struct test_gbstate s, struct gbstate s_hat){
     int mismatches = 0;
     for(int i = 0; i < r.len; i++){
         struct ram_state rs = r.states[i];
-        mismatches += (s_hat.ram[rs.pos] != rs.val);
+        if(s_hat.ram[rs.pos] != rs.val){
+                mismatches++;
+                #ifdef VERBOSE
+                printf("memory failure! %x (pred) != %x (true)\n", s_hat.ram[rs.pos], rs.val);
+                #endif
+        }
     }
     struct kvs k = s.kvs;
     for(int i = 0; i < k.len; i++){
@@ -122,25 +127,25 @@ void sm83_test_dump(struct sm83_test *tests, size_t tests_len) {
         printf("\tInitial KVs:");
         for (size_t j = 0; j < tests[i].initial.kvs.len; j++) {
             struct gbs_kv kv = tests[i].initial.kvs.fields[j];
-            printf("[%s, %zu]", kv.k, kv.v);
+            printf("[%s, 0x%x]", kv.k, kv.v);
         }
         printf("\n");
         printf("\tInitial RAM States:");
         for (size_t j = 0; j < tests[i].initial.rams.len; j++) {
             struct ram_state rs = tests[i].initial.rams.states[j];
-            printf("[%zu, %zu]", rs.pos, rs.val);
+            printf("[0x%x, 0x%x]", rs.pos, rs.val);
         }
         printf("\n");
         printf("\tFinal KVs:");
         for (size_t j = 0; j < tests[i].final.kvs.len; j++) {
             struct gbs_kv kv = tests[i].final.kvs.fields[j];
-            printf("[%s, %zu]", kv.k, kv.v);
+            printf("[%s, 0x%x]", kv.k, kv.v);
         }
         printf("\n");
         printf("\tFinal RAM States:");
         for (size_t j = 0; j < tests[i].initial.rams.len; j++) {
             struct ram_state rs = tests[i].final.rams.states[j];
-            printf("[%zu, %zu]", rs.pos, rs.val);
+            printf("[0x%x, 0x%x]", rs.pos, rs.val);
         }
         printf("\n\n");
     }

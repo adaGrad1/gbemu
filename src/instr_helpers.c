@@ -13,7 +13,8 @@ const uint8_t BITS_TO_REG_IDX[] = {
     RH,
     RL,
     255,
-    RA
+    RA,
+    RF
 };
 
 uint8_t get_mem_at_reg(gb_t* s, uint8_t reg_idx){

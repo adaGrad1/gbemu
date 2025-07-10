@@ -1,7 +1,7 @@
 #ifndef INSTR_HELP_
 #define INSTR_HELP_
-#define set_bit(x, b, v) x = (x & ~(1 << b)) | (!!v << b)
-#define get_bit(x, b) ((x >> b) & 1)
+#define set_bit(x, b, v) x = ((x) & ~(1 << (b))) | (!!(v) << (b))
+#define get_bit(x, b) (((x) >> (b)) & 1)
 #define ZERO_FLAG_BIT 7
 #define SUB_FLAG_BIT 6
 #define HALFCARRY_FLAG_BIT 5
