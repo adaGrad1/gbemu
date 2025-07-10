@@ -355,12 +355,34 @@ uint16_t cpl(uint8_t instr, gb_t *s){
     return 1;
 }
 
+uint16_t daa(uint8_t instr, gb_t *s){
+    uint8_t sub_flag = get_bit(s->reg[RF], SUB_FLAG_BIT);
+    uint8_t HC_flag = get_bit(s->reg[RF], HALFCARRY_FLAG_BIT);
+    uint8_t C_flag = get_bit(s->reg[RF], CARRY_FLAG_BIT);
+
+    uint8_t new_C_flag = 0;
+    if (sub_flag){
+        uint8_t adj = (HC_flag * 0x6) + (C_flag * 0x60);
+        new_C_flag=C_flag;
+        s->reg[RA] -= adj;
+    } else {
+        uint8_t adj = 0;
+        if (((s->reg[RA] & 0x0F) > 0x09) || HC_flag) adj += 0x06;
+        if (((s->reg[RA] & 0xFF) > 0x99) || C_flag) new_C_flag=1, adj += 0x60;
+        s->reg[RA] += adj;
+    }
+
+    set_flags(s, !(s->reg[RA]), LEAVE_BIT_AS_IS, 0, new_C_flag);
+    return 1;
+}
+
 uint16_t step(gb_t *s) {
     uint8_t instr = s->ram[s->pc++];
     uint16_t r;
     if      mop(instr, 0x00, 0xEF) r=1; // nop or stop -- TODO reset-related??
     else if mop(instr, 0x07, 0xE7) r=ra(instr, s);
     else if mop(instr, 0x01, 0xCF) r=ldi_16(instr, s);
+    else if mop(instr, 0x27, 0xFF) r=daa(instr, s);
     else if mop(instr, 0x37, 0xFF) r=scf(instr, s);
     else if mop(instr, 0x2F, 0xFF) r=cpl(instr, s);
     else if mop(instr, 0x3F, 0xFF) r=ccf(instr, s);
