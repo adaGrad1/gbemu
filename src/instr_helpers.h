@@ -23,11 +23,14 @@ typedef struct memory_grab {
     uint8_t val;
 } memgrb;
 
+void adi_regpair(int16_t val, gb_t* s, uint8_t reg_idx); // add immediate to a particular pair of registers (e.g. HL or AF);
 memgrb get_reg_from_bits(uint8_t bits, gb_t* s);
-// memgrb set_reg_from_bits(uint8_t bits, gb_t* s, uint8_t reg_idx);
+uint8_t get_mem_at_reg(gb_t* s, uint8_t reg_idx);
 
 uint16_t set_reg_from_bits(uint8_t idx, uint8_t val, gb_t* s);
-// uint16_t load_reg_from_bits(uint8_t idx, uint8_t val, gb_t* s, uint8_t reg_idx);
+void set_mem_at_reg(uint8_t val, gb_t* s, uint8_t reg_idx);
+
+uint16_t load_reg_from_bits(uint8_t idx, uint8_t val, gb_t* s, uint8_t reg_idx);
 
 void set_flags(gb_t* s, uint8_t zero, uint8_t sub, uint8_t halfcarry, uint8_t carry);
 

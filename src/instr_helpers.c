@@ -16,18 +16,19 @@ const uint8_t BITS_TO_REG_IDX[] = {
     RA
 };
 
-// uint8_t load_mem_at_regs(gb_t* s, uint8_t hi_reg_idx) {
-//     uint16_t HL = (s->reg[hi_reg_idx] << 8) + (s->reg[hi_reg_idx+1]);
-//     return s->ram[HL];
-// }
+uint8_t get_mem_at_reg(gb_t* s, uint8_t reg_idx){
+    uint16_t ptr = s->reg[reg_idx];
+    ptr <<= 8;
+    ptr += s->reg[reg_idx+1];
+    return s->ram[ptr];
+}
 
 memgrb get_reg_from_bits(uint8_t bits, gb_t* s) {
     uint16_t cycles = 1;
     uint8_t reg_idx = BITS_TO_REG_IDX[bits];
     uint8_t val;
-    uint16_t HL = (s->reg[RH] << 8) + (s->reg[RL]);
     if(reg_idx == 255){
-        val = s->ram[HL];
+        val = get_mem_at_reg(s, RH);
         cycles = 2;
     } else{
         val = s->reg[reg_idx];
@@ -36,16 +37,26 @@ memgrb get_reg_from_bits(uint8_t bits, gb_t* s) {
     return toret;
 }
 
+// add immediate to a pair of registers
+void adi_regpair(int16_t val, gb_t* s, uint8_t reg_idx){
+    // it would be most convenient to do uint16_t* val = (uint16_t) ((s->reg)+reg_idx);
+    // but I think this breaks depending on the endian-ness of the system
+    // so let's just not!
+    uint16_t old_val = (s->reg[reg_idx] << 8) + s->reg[reg_idx+1];
+    uint16_t new_val = old_val + val;
+    s->reg[reg_idx] = new_val >> 8;
+    s->reg[reg_idx+1] = new_val & 0x00FF;
+}
+void set_mem_at_reg(uint8_t val, gb_t* s, uint8_t reg_idx) {
+    uint16_t ptr = (s->reg[reg_idx] << 8) + (s->reg[reg_idx+1]);
+    s->ram[ptr] = val;
+}
 
-// uint16_t load_reg_from_bits(uint8_t idx, uint8_t val, gb_t* s) {
-//     return load_reg_from_bits(idx, val, s, RH);
-// }
 uint16_t set_reg_from_bits(uint8_t idx, uint8_t val, gb_t* s) {
     uint16_t cycles = 1;
     uint8_t reg_idx = BITS_TO_REG_IDX[idx];
-    uint16_t HL = (s->reg[RH] << 8) + (s->reg[RL]);
     if(reg_idx == 255){
-        s->ram[HL] = val;
+        set_mem_at_reg(val, s, RH);
         cycles = 2;
 
     } else{
