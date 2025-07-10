@@ -109,10 +109,9 @@ uint16_t add(uint8_t instr, gb_t *s) {
 
 uint16_t sub(uint8_t instr, gb_t *s) {
     memgrb source = get_reg_from_bits((instr & 0x07), s);
-    uint8_t carry_to_include = (instr & 0x08) * get_bit(s->reg[RF], CARRY_FLAG_BIT);
+    uint8_t carry_to_include = (instr & 0x08) && get_bit(s->reg[RF], CARRY_FLAG_BIT);
     uint8_t carry = s->reg[RA] < (source.val + carry_to_include);
     uint8_t halfcarry = (s->reg[RA] & 0x0F) < (source.val & 0x0F) + carry_to_include;
-    printf("%x, %x, %x\n", carry_to_include, carry, halfcarry);
     s->reg[RA] -= (source.val + carry_to_include);
     set_flags(s, !s->reg[RA], 1, halfcarry, carry);
     return source.cycles;
