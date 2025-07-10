@@ -256,11 +256,27 @@ uint16_t push(uint8_t instr, gb_t *s)
     return 4;
 }
 
-// void _ret(gb_t* s){
-//     s->pc = s->ram[(s->sp)++];
-//     s->pc <<= 8;
-//     s->pc += s->ram[(s->sp)++];
-// }
+void _ret(gb_t* s){
+    s->pc = s->ram[(s->sp)+1];
+    s->pc <<= 8;
+    s->pc += s->ram[(s->sp)];
+    s->sp+=2;
+}
+
+uint16_t ret(uint8_t instr, gb_t* s) {
+    uint8_t bit_to_check = ((instr >> 4) & 0x01) ? CARRY_FLAG_BIT : ZERO_FLAG_BIT;
+
+    uint8_t cond = !get_bit(s->reg[RF], bit_to_check);
+    if ((instr >> 3) & 0x01){
+        cond = !cond;
+    }
+    if (cond){
+        _ret(s);
+        return 5;
+    } else {
+        return 2;
+    }
+}
 
 void _call(uint16_t addr, gb_t* s){
     s->ram[--(s->sp)] = s->pc >> 8;
@@ -404,6 +420,7 @@ uint16_t step(gb_t *s) {
     else if mop(instr, 0xCB, 0xFF) r=cb(instr, s);
     else if mop(instr, 0xC1, 0xCF) r=pop(instr, s);
     else if mop(instr, 0xC5, 0xCF) r=push(instr, s);
+    else if mop(instr, 0xC0, 0xE7) r=ret(instr, s);
     else if mop(instr, 0xC7, 0xC7) r=rst(instr, s);
     return r;
 }
