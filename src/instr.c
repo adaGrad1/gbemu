@@ -521,7 +521,15 @@ uint16_t callcond(uint8_t instr, gb_t *s){
     } else {
         return 3;
     }
+}
 
+uint16_t call(uint8_t instr, gb_t *s){
+    uint16_t addr = s->ram[s->pc+1];
+    addr <<= 8;
+    addr += s->ram[s->pc];
+    s->pc+=2;
+    _call(addr, s);
+    return 6;
 }
 
 
@@ -560,6 +568,7 @@ uint16_t step(gb_t *s) {
     else if mop(instr, 0xC0, 0xE7) r=retcond(instr, s);
     else if mop(instr, 0xC9, 0xEF) r=ret(instr, s);
     else if mop(instr, 0xC4, 0xE7) r=callcond(instr, s);
+    else if mop(instr, 0xCD, 0xFF) r=call(instr, s);
     else if mop(instr, 0xC2, 0xE7) r=jmp(instr, s);
     else if mop(instr, 0xC7, 0xC7) r=rst(instr, s);
     else if mop(instr, 0xE0, 0xEF) r=ld_ia(instr, s);
