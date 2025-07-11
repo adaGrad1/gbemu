@@ -554,11 +554,16 @@ uint16_t jr(uint8_t instr, gb_t *s){
     }
 }
 
+uint16_t stop(uint8_t instr, gb_t *s) {
+    //s->pc++; // ???
+    return 3; // 3 cycles????
+}
 
 uint16_t step(gb_t *s) {
     uint8_t instr = s->ram[s->pc++];
     uint16_t r;
-    if      mop(instr, 0x00, 0xEF) r=1; // nop or stop -- TODO reset-related??
+    if      mop(instr, 0x00, 0xFF) r=1;
+    else if mop(instr, 0x10, 0xFF) r=stop(instr, s);
     else if mop(instr, 0x07, 0xE7) r=ra(instr, s);
     else if mop(instr, 0x01, 0xCF) r=ldi_16(instr, s);
     else if mop(instr, 0x08, 0xFF) ; // TODO
