@@ -621,6 +621,6 @@ uint16_t step(gb_t *s) {
     else if mop(instr, 0xE2, 0xEF) r=ld_rc_a(instr, s);
     else if mop(instr, 0xE8, 0xFF) r=adi_sp(instr, s);
     else if mop(instr, 0xE9, 0xFF) r=jp_hl(instr, s);
-    // else printf("unknown instr!\n");
+    else printf("unknown instr!\n");
     return r;
 }

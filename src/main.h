@@ -20,6 +20,7 @@ typedef struct gbstate {
     uint16_t pc;
     uint16_t sp;
     uint8_t ei;
+    uint64_t cycles;
     unsigned char reg[REG_LEN];
     unsigned char ram[GBR_LEN];
 } gb_t;
