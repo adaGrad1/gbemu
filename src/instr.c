@@ -421,6 +421,11 @@ uint16_t jmp(uint8_t instr, gb_t *s){
     }
 
 }
+uint16_t di(uint8_t instr, gb_t *s){
+    s->ei=0;
+    return 1;
+}
+
 uint16_t ei(uint8_t instr, gb_t *s){
     s->ei=1;
     return 1;
@@ -493,6 +498,7 @@ uint16_t step(gb_t *s) {
     else if mop(instr, 0x76, 0xFF) r=halt();
     else if mop(instr, 0xF8, 0xFF) r=ld_hl_sp(instr,s);
     else if mop(instr, 0xF9, 0xFF) r=ld_sp_hl(instr,s);
+    else if mop(instr, 0xF3, 0xFF) r=di(instr, s);
     else if mop(instr, 0xFB, 0xFF) r=ei(instr, s);
     else if mop(instr, 0x02, 0xC7) r=ld_ext(instr, s);
     else if mop(instr, 0x03, 0xC7) r=incdec_16(instr, s);
