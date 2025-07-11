@@ -497,6 +497,15 @@ uint16_t adi_sp(uint8_t instr, gb_t *s){
     return 4;
 }
 
+uint16_t jp_hl(uint8_t instr, gb_t *s){
+    uint16_t tgt = s->reg[RH];
+    tgt <<= 8;
+    tgt += s->reg[RL];
+    s->pc = tgt;
+    return 1;
+}
+
+
 
 uint16_t step(gb_t *s) {
     uint8_t instr = s->ram[s->pc++];
@@ -538,6 +547,7 @@ uint16_t step(gb_t *s) {
     else if mop(instr, 0xEA, 0xEF) r=ld_ia(instr, s);
     else if mop(instr, 0xE2, 0xEF) r=ld_rc_a(instr, s);
     else if mop(instr, 0xE8, 0xFF) r=adi_sp(instr, s);
+    else if mop(instr, 0xE9, 0xFF) r=jp_hl(instr, s);
     // else printf("unknown instr!\n");
     return r;
 }
