@@ -485,6 +485,19 @@ uint16_t ld_rc_a(uint8_t instr, gb_t *s){
 
     return 2;
 }
+
+uint16_t adi_sp(uint8_t instr, gb_t *s){
+    int8_t offset = s->ram[s->pc++];
+    uint8_t carry;
+    uint8_t halfcarry;
+    carry = calc_add_carry_8(s->sp, offset, 0);
+    halfcarry = calc_add_halfcarry_8(s->sp, offset, 0);
+    set_flags(s, 0, 0, halfcarry, carry);
+    s->sp += offset;
+    return 4;
+}
+
+
 uint16_t step(gb_t *s) {
     uint8_t instr = s->ram[s->pc++];
     uint16_t r;
@@ -524,6 +537,7 @@ uint16_t step(gb_t *s) {
     else if mop(instr, 0xE0, 0xEF) r=ld_ia(instr, s);
     else if mop(instr, 0xEA, 0xEF) r=ld_ia(instr, s);
     else if mop(instr, 0xE2, 0xEF) r=ld_rc_a(instr, s);
+    else if mop(instr, 0xE8, 0xFF) r=adi_sp(instr, s);
     // else printf("unknown instr!\n");
     return r;
 }
