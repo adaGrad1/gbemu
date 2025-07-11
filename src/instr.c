@@ -470,6 +470,16 @@ uint16_t ld_ia(uint8_t instr, gb_t *s){
     return cycles;
 }
 
+uint16_t ld_rc_a(uint8_t instr, gb_t *s){
+    uint16_t addr = 0xFF00 + s->reg[RC];
+    if (instr & 0x10) { // RA -> RAM
+        s->reg[RA] = s->ram[addr];
+    } else {
+        s->ram[addr] = s->reg[RA];
+    }
+
+    return 2;
+}
 uint16_t step(gb_t *s) {
     uint8_t instr = s->ram[s->pc++];
     uint16_t r;
@@ -507,6 +517,7 @@ uint16_t step(gb_t *s) {
     else if mop(instr, 0xC7, 0xC7) r=rst(instr, s);
     else if mop(instr, 0xE0, 0xEF) r=ld_ia(instr, s);
     else if mop(instr, 0xEA, 0xEF) r=ld_ia(instr, s);
+    else if mop(instr, 0xE2, 0xEF) r=ld_rc_a(instr, s);
     // else printf("unknown instr!\n");
     return r;
 }
