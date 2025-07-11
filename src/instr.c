@@ -413,7 +413,7 @@ uint16_t jmp(uint8_t instr, gb_t *s){
     if ((instr >> 3) & 0x01){
         cond = !cond;
     }
-    if (cond){
+    if (cond || instr == 0xC3){
         s->pc = new_addr;
         return 4;
     } else {
@@ -546,6 +546,9 @@ uint16_t jr(uint8_t instr, gb_t *s){
             cond = get_bit(s->reg[RF], CARRY_FLAG_BIT);
             break;
     }
+    if (!(instr & 0x08)) {
+        cond = !cond;
+    }
     if (cond){
         s->pc += offset;
         return 3;
@@ -579,8 +582,7 @@ uint16_t step(gb_t *s) {
     else if mop(instr, 0x07, 0xE7) r=ra(instr, s);
     else if mop(instr, 0x01, 0xCF) r=ldi_16(instr, s);
     else if mop(instr, 0x08, 0xCF) r=jr(instr, s);
-    else if mop(instr, 0x20, 0xFF) ; // TODO
-    else if mop(instr, 0x30, 0xFF) ; // TODO
+    else if mop(instr, 0x20, 0xEF) r=jr(instr, s);
     else if mop(instr, 0x27, 0xFF) r=daa(instr, s);
     else if mop(instr, 0x37, 0xFF) r=scf(instr, s);
     else if mop(instr, 0x2F, 0xFF) r=cpl(instr, s);
@@ -606,7 +608,7 @@ uint16_t step(gb_t *s) {
     else if mop(instr, 0xB8, 0xF8) r=cp(instr, s);
     else if mop(instr, 0xCB, 0xFF) r=cb(instr, s);
     else if mop(instr, 0xC1, 0xCF) r=pop(instr, s);
-    else if mop(instr, 0xC3, 0xFF) ; // TODO
+    else if mop(instr, 0xC3, 0xFF) r=jmp(instr, s);
     else if mop(instr, 0xC5, 0xCF) r=push(instr, s);
     else if mop(instr, 0xC0, 0xE7) r=retcond(instr, s);
     else if mop(instr, 0xC9, 0xEF) r=ret(instr, s);
