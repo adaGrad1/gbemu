@@ -73,3 +73,27 @@ void set_flags(gb_t* s, uint8_t zero, uint8_t sub, uint8_t halfcarry, uint8_t ca
     if(halfcarry != LEAVE_BIT_AS_IS) set_bit(s->reg[RF], HALFCARRY_FLAG_BIT, halfcarry);
     if(carry != LEAVE_BIT_AS_IS) set_bit(s->reg[RF], CARRY_FLAG_BIT, carry);
 }
+
+uint8_t calc_add_carry_8(uint8_t a, uint8_t b, uint8_t carry_in) {
+    return ((uint16_t)a) + ((uint16_t)b) + carry_in > 255;
+}
+
+uint8_t calc_add_halfcarry_8(uint8_t a, uint8_t b, uint8_t carry_in) {
+    return (a & 0x0F) + (b & 0x0F) + carry_in > 0x0F;
+}
+
+uint8_t calc_sub_carry_8(uint8_t a, uint8_t b, uint8_t carry_in) {
+    return a < (b + carry_in);
+}
+
+uint8_t calc_sub_halfcarry_8(uint8_t a, uint8_t b, uint8_t carry_in) {
+    return (a & 0x0F) < (b & 0x0F) + carry_in;
+}
+
+uint8_t calc_add_carry_16(uint16_t a, uint16_t b) {
+    return ((uint32_t)a) + ((uint32_t)b) > 0xFFFF;
+}
+
+uint8_t calc_add_halfcarry_16(uint16_t a, uint16_t b) {
+    return (a & 0x0FFF) + (b & 0x0FFF) > 0x0FFF;
+}

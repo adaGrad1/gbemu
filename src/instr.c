@@ -100,8 +100,8 @@ uint16_t ld(uint8_t instr, gb_t *s) {
 uint16_t add(uint8_t instr, gb_t *s) {
     memgrb source = get_reg_from_bits((instr & 0x07), s);
     uint8_t carry_to_include = (instr & 0x08) && get_bit(s->reg[RF], CARRY_FLAG_BIT);
-    uint8_t carry = ((uint16_t)s->reg[RA]) + ((uint16_t)source.val) + carry_to_include > 255;
-    uint8_t halfcarry = (s->reg[RA] & 0x0F) + (source.val & 0x0F) + carry_to_include > 0x0F;
+    uint8_t carry = calc_add_carry_8(s->reg[RA], source.val, carry_to_include);
+    uint8_t halfcarry = calc_add_halfcarry_8(s->reg[RA], source.val, carry_to_include);
     s->reg[RA] += source.val + carry_to_include;
     set_flags(s, !s->reg[RA], 0, halfcarry, carry);
     return source.cycles;
@@ -110,8 +110,8 @@ uint16_t add(uint8_t instr, gb_t *s) {
 uint16_t sub(uint8_t instr, gb_t *s) {
     memgrb source = get_reg_from_bits((instr & 0x07), s);
     uint8_t carry_to_include = (instr & 0x08) && get_bit(s->reg[RF], CARRY_FLAG_BIT);
-    uint8_t carry = s->reg[RA] < (source.val + carry_to_include);
-    uint8_t halfcarry = (s->reg[RA] & 0x0F) < (source.val & 0x0F) + carry_to_include;
+    uint8_t carry = calc_sub_carry_8(s->reg[RA], source.val, carry_to_include);
+    uint8_t halfcarry = calc_sub_halfcarry_8(s->reg[RA], source.val, carry_to_include);
     s->reg[RA] -= (source.val + carry_to_include);
     set_flags(s, !s->reg[RA], 1, halfcarry, carry);
     return source.cycles;
@@ -351,8 +351,8 @@ uint16_t add_16(uint8_t instr, gb_t *s) {
     uint16_t tgt = s->reg[RH];
     tgt <<= 8;
     tgt += s->reg[RL];
-    uint8_t halfcarry = (tgt & 0x0FFF) + (src & 0x0FFF) > 0x0FFF;
-    uint8_t carry = ((uint32_t) tgt) + ((uint32_t) src) > 0xFFFF;    
+    uint8_t halfcarry = calc_add_halfcarry_16(tgt, src);
+    uint8_t carry = calc_add_carry_16(tgt, src);    
     set_flags(s, LEAVE_BIT_AS_IS, 0, halfcarry, carry);
 
     tgt = tgt + src;
@@ -424,8 +424,13 @@ uint16_t ei(uint8_t instr, gb_t *s){
 uint16_t ld_hl_sp(uint8_t instr, gb_t *s){
     int8_t offset = s->ram[s->pc++];
     uint16_t tgt = s->sp + offset;
-    s->reg[RH] = s->sp >> 8;
-    s->reg[RH] = s->sp & 0x00FF;
+    s->reg[RH] = tgt >> 8;
+    s->reg[RL] = tgt & 0x00FF;
+    uint8_t carry;
+    uint8_t halfcarry;
+    carry = calc_add_carry_8(s->sp, offset, 0);
+    halfcarry = calc_add_halfcarry_8(s->sp, offset, 0);
+    set_flags(s, 0, 0, halfcarry, carry);
     return 3;
 }
 
@@ -449,7 +454,7 @@ uint16_t step(gb_t *s) {
     else if mop(instr, 0x2F, 0xFF) r=cpl(instr, s);
     else if mop(instr, 0x3F, 0xFF) r=ccf(instr, s);
     else if mop(instr, 0x76, 0xFF) r=halt();
-    else if mop(instr, 0xF8, 0xFF) ;
+    else if mop(instr, 0xF8, 0xFF) r=ld_hl_sp(instr,s);
     else if mop(instr, 0xF9, 0xFF) r=ld_sp_hl(instr,s);
     else if mop(instr, 0xFA, 0xFF) ;
     else if mop(instr, 0xFB, 0xFF) r=ei(instr, s);
