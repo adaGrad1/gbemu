@@ -398,6 +398,26 @@ uint16_t daa(uint8_t instr, gb_t *s){
     return 1;
 }
 
+uint16_t jmp(uint8_t instr, gb_t *s){
+    uint8_t bit_to_check = ((instr >> 4) & 0x01) ? CARRY_FLAG_BIT : ZERO_FLAG_BIT;
+    uint8_t cond = !get_bit(s->reg[RF], bit_to_check);
+    uint16_t new_addr = s->ram[s->pc+1];
+    new_addr <<= 8;
+    new_addr += s->ram[s->pc];
+    s->pc+=2;
+    if ((instr >> 3) & 0x01){
+        cond = !cond;
+    }
+    if (cond){
+        s->pc = new_addr;
+        return 4;
+    } else {
+        return 3;
+    }
+
+}
+
+
 uint16_t step(gb_t *s) {
     uint8_t instr = s->ram[s->pc++];
     uint16_t r;
@@ -428,6 +448,7 @@ uint16_t step(gb_t *s) {
     else if mop(instr, 0xC5, 0xCF) r=push(instr, s);
     else if mop(instr, 0xC0, 0xE7) r=retcond(instr, s);
     else if mop(instr, 0xC9, 0xEF) r=ret(instr, s);
+    else if mop(instr, 0xC2, 0xE7) r=jmp(instr, s);
     else if mop(instr, 0xC7, 0xC7) r=rst(instr, s);
     return r;
 }
