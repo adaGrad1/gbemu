@@ -532,6 +532,28 @@ uint16_t call(uint8_t instr, gb_t *s){
     return 6;
 }
 
+uint16_t jr(uint8_t instr, gb_t *s){
+    uint16_t cond;
+    int8_t offset = s->ram[s->pc++];
+    switch((instr >> 4) & 0x03) {
+        case 1:
+            cond = 1; // unconditional JR
+            break;
+        case 2:
+            cond = get_bit(s->reg[RF], ZERO_FLAG_BIT);
+            break;
+        case 3:
+            cond = get_bit(s->reg[RF], CARRY_FLAG_BIT);
+            break;
+    }
+    if (cond){
+        s->pc += offset;
+        return 3;
+    } else {
+        return 2;
+    }
+}
+
 
 uint16_t step(gb_t *s) {
     uint8_t instr = s->ram[s->pc++];
@@ -539,6 +561,8 @@ uint16_t step(gb_t *s) {
     if      mop(instr, 0x00, 0xEF) r=1; // nop or stop -- TODO reset-related??
     else if mop(instr, 0x07, 0xE7) r=ra(instr, s);
     else if mop(instr, 0x01, 0xCF) r=ldi_16(instr, s);
+    else if mop(instr, 0x08, 0xFF) ; // TODO
+    else if mop(instr, 0x08, 0xCF) r=jr(instr, s);
     else if mop(instr, 0x27, 0xFF) r=daa(instr, s);
     else if mop(instr, 0x37, 0xFF) r=scf(instr, s);
     else if mop(instr, 0x2F, 0xFF) r=cpl(instr, s);
