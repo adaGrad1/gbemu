@@ -14,6 +14,8 @@
 
 #include "util.h"
 #include "jtest.h"
+#include "instr.h"
+#include "ppu.h"
 #include "main.h"
 
 
@@ -238,7 +240,7 @@ void dump_rom(struct string *rom_data) {
     }
     printf("\n");
 }
-#define ONLY_TESTS=1;
+// #define ONLY_TESTS=1;
 int main(int argc, char* argv[]) {
 #ifdef ONLY_TESTS
     char **filenames = calloc(1024, sizeof(char*));
@@ -284,40 +286,40 @@ int main(int argc, char* argv[]) {
     struct dim vdim = { .w = 160, .h = 144 };
     // physical screen
     struct dim pdim = { .w = vdim.w * WIN_SCALE * 2, .h = vdim.h * WIN_SCALE };
-
-    struct string rom_data = {0};
-    assert (read_file("./roms/tetris.gb", &rom_data) == 0
+    gb_t *s = calloc(1, sizeof(gb_t));
+    assert (read_file("./roms/tetris.gb", &s->ram) == 0
             && "Failed to load tetris rom");
     /* dump_rom(&rom_data); */
 
     InitWindow(pdim.w, pdim.h, WINDOW_TITLE);
     SetTargetFPS(TARGET_FPS);
+    uint64_t cycles = 0;
     while (!WindowShouldClose()) {
-        /* update_input (&ctx); */
-        /* for (int i = 0; i < 10; i++) ops_dispatch(&ctx); */
+        cycles += step(s);
+        printf("pc: %x\n", s->pc);
 
-        BeginDrawing();
-        ClearBackground((Color) { .r = 0, .g = 0, .b = 0, .a = 255 });
-        // REGISTER VALUES
-        Vector2 text_pos = { .x = pdim.w/2, .y = 0 };
-        Vector2 reg_spacing = { .x = 60, .y = 20 };
-        for (size_t i = 0; i < REG_LEN; i++) {
-            size_t x_off = i % 6 * reg_spacing.x;
-            if (i % 6 == 0) text_pos.y += reg_spacing.y;
-            size_t font_size = reg_spacing.x;
-            DrawText(TextFormat("%02d: 0", i), text_pos.x + x_off, text_pos.y, 14, WHITE);
-        }
-        // INSTRUCTIONS
-        size_t curr_pos = 0;
-        text_pos = (Vector2) { .x = pdim.w/2, .y = pdim.h/2 };
-        Vector2 op_spacing = { .x = 60, .y = 20 };
-        for (size_t i = 0; curr_pos < rom_data.len && i < 20; curr_pos++, i++) {
-            size_t x_off = i % 6 * reg_spacing.x;
-            if (i % 6 == 0) text_pos.y += reg_spacing.y;
-            size_t font_size = reg_spacing.x;
-            DrawText(TextFormat("%02X", rom_data.str[curr_pos]), text_pos.x + x_off, text_pos.y, 14, WHITE);
-        }
-        EndDrawing();
+        // BeginDrawing();
+        // ClearBackground((Color) { .r = 0, .g = 0, .b = 0, .a = 255 });
+        // // REGISTER VALUES
+        // Vector2 text_pos = { .x = pdim.w/2, .y = 0 };
+        // Vector2 reg_spacing = { .x = 60, .y = 20 };
+        // for (size_t i = 0; i < REG_LEN; i++) {
+        //     size_t x_off = i % 6 * reg_spacing.x;
+        //     if (i % 6 == 0) text_pos.y += reg_spacing.y;
+        //     size_t font_size = reg_spacing.x;
+        //     DrawText(TextFormat("%02d: 0", i), text_pos.x + x_off, text_pos.y, 14, WHITE);
+        // }
+        // // INSTRUCTIONS
+        // size_t curr_pos = 0;
+        // text_pos = (Vector2) { .x = pdim.w/2, .y = pdim.h/2 };
+        // Vector2 op_spacing = { .x = 60, .y = 20 };
+        // for (size_t i = 0; curr_pos < rom_data.len && i < 20; curr_pos++, i++) {
+        //     size_t x_off = i % 6 * reg_spacing.x;
+        //     if (i % 6 == 0) text_pos.y += reg_spacing.y;
+        //     size_t font_size = reg_spacing.x;
+        //     DrawText(TextFormat("%02X", rom_data.str[curr_pos]), text_pos.x + x_off, text_pos.y, 14, WHITE);
+        // }
+        // EndDrawing();
     }
     CloseWindow();
 #endif // ONLY_TESTS

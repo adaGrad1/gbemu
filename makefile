@@ -15,13 +15,14 @@ endif
 
 build: skeleton gbemu
 
-gbemu: gbemu.o cjson.o jtest.o util.o instr.o instr_helpers.o
+gbemu: gbemu.o cjson.o jtest.o util.o instr.o instr_helpers.o ppu.o
 	$(CC) $(CFLAGS) -o $(BUILD_DIR)/$@ $(BUILD_DIR)/objs/gbemu.o \
 		$(BUILD_DIR)/objs/cjson.o \
 		$(BUILD_DIR)/objs/jtest.o \
 		$(BUILD_DIR)/objs/util.o \
 		$(BUILD_DIR)/objs/instr.o \
-		$(BUILD_DIR)/objs/instr_helpers.o
+		$(BUILD_DIR)/objs/instr_helpers.o \
+		$(BUILD_DIR)/objs/ppu.o
 
 
 instr.o: src/instr.c
@@ -41,6 +42,9 @@ cjson.o: vendor/cJSON/cJSON.c
 
 util.o: src/util.h
 	$(CC) $(CFLAGS) -x c -DUTIL_IMPLEMENTATION -c -o $(BUILD_DIR)/objs/$@ $<
+
+ppu.o: src/ppu.c
+	$(CC) $(CFLAGS) -c -o $(BUILD_DIR)/objs/$@ $<
 
 skeleton:
 	mkdir -p ${BUILD_DIR}
