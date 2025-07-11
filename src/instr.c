@@ -443,6 +443,27 @@ uint16_t ld_sp_hl(uint8_t instr, gb_t *s){
     return 2;
 }
 
+uint16_t ld_ia(uint8_t instr, gb_t *s){
+    uint16_t cycles;
+    uint16_t addr;
+    if (instr & 0x08) { // two-byte load immediate
+        cycles = 4;
+        addr = s->ram[s->pc++];
+        addr <<= 8;
+        addr += s->ram[s->pc++];
+    } else {
+        cycles = 3;
+        addr = 0xFF00;
+        addr += s->ram[s->pc++];
+    }
+    if (instr & 0x10) { // RA -> RAM
+        s->reg[RA] = s->ram[addr];
+    } else {
+        s->ram[addr] = s->reg[RA];
+    }
+    return cycles;
+}
+
 uint16_t step(gb_t *s) {
     uint8_t instr = s->ram[s->pc++];
     uint16_t r;
@@ -479,5 +500,8 @@ uint16_t step(gb_t *s) {
     else if mop(instr, 0xC9, 0xEF) r=ret(instr, s);
     else if mop(instr, 0xC2, 0xE7) r=jmp(instr, s);
     else if mop(instr, 0xC7, 0xC7) r=rst(instr, s);
+    else if mop(instr, 0xE0, 0xEF) r=ld_ia(instr, s);
+    else if mop(instr, 0xEA, 0xEF) r=ld_ia(instr, s);
+
     return r;
 }
