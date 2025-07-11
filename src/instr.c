@@ -416,7 +416,27 @@ uint16_t jmp(uint8_t instr, gb_t *s){
     }
 
 }
+uint16_t ei(uint8_t instr, gb_t *s){
+    s->ei=1;
+    return 1;
+}
 
+uint16_t ld_hl_sp(uint8_t instr, gb_t *s){
+    int8_t offset = s->ram[s->pc++];
+    uint16_t tgt = s->sp + offset;
+    s->reg[RH] = s->sp >> 8;
+    s->reg[RH] = s->sp & 0x00FF;
+    return 3;
+}
+
+
+uint16_t ld_sp_hl(uint8_t instr, gb_t *s){
+    uint16_t tgt = s->reg[RH];
+    tgt <<= 8;
+    tgt += s->reg[RL];
+    s->sp = tgt;
+    return 2;
+}
 
 uint16_t step(gb_t *s) {
     uint8_t instr = s->ram[s->pc++];
@@ -429,6 +449,10 @@ uint16_t step(gb_t *s) {
     else if mop(instr, 0x2F, 0xFF) r=cpl(instr, s);
     else if mop(instr, 0x3F, 0xFF) r=ccf(instr, s);
     else if mop(instr, 0x76, 0xFF) r=halt();
+    else if mop(instr, 0xF8, 0xFF) ;
+    else if mop(instr, 0xF9, 0xFF) r=ld_sp_hl(instr,s);
+    else if mop(instr, 0xFA, 0xFF) ;
+    else if mop(instr, 0xFB, 0xFF) r=ei(instr, s);
     else if mop(instr, 0x02, 0xC7) r=ld_ext(instr, s);
     else if mop(instr, 0x03, 0xC7) r=incdec_16(instr, s);
     else if mop(instr, 0x04, 0xC7) r=incdec(instr, s);

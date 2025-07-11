@@ -60,6 +60,8 @@ struct gbstate test_gbstate_to_gbstate(struct test_gbstate s){
         } else if (strcmp(kv.k, "pc") == 0){
             to_ret.pc = kv.v;
         } else if (strcmp(kv.k, "ime") == 0){
+        } else if (strcmp(kv.k, "ei") == 0){
+            to_ret.ei = kv.v;
         } else {
             uint8_t reg_idx = key_to_idx[kv.k[0]];
             to_ret.reg[reg_idx] = kv.v;
@@ -99,6 +101,13 @@ int verify_gbstate_with_test(struct test_gbstate s, struct gbstate s_hat){
                 #endif
             }
         } else if (strcmp(kv.k, "ime") == 0){
+        } else if (strcmp(kv.k, "ei") == 0){
+            if(s_hat.ei != kv.v){
+                mismatches++;
+                #ifdef VERBOSE
+                printf("REG %s failure! %x (pred) != %x (true)\n", kv.k, s_hat.ei, kv.v);
+                #endif
+            }
         } else {
             uint8_t reg_idx = key_to_idx[kv.k[0]];
             if(s_hat.reg[reg_idx] != kv.v){
