@@ -556,18 +556,31 @@ uint16_t jr(uint8_t instr, gb_t *s){
 
 uint16_t stop(uint8_t instr, gb_t *s) {
     //s->pc++; // ???
-    return 3; // 3 cycles????
+    return 3; // 3 cycles???? documentation doesn't seem to agree on behavior here.
 }
+
+uint16_t ld_ia_sp(uint8_t instr, gb_t *s) {
+    uint16_t addr = s->ram[s->pc+1];
+    addr <<= 8;
+    addr += s->ram[s->pc];
+    s->pc+=2;
+    s->ram[addr] = s->sp & 0xFF;
+    s->ram[addr+1] = s->sp >> 8;
+    return 5;
+}
+
 
 uint16_t step(gb_t *s) {
     uint8_t instr = s->ram[s->pc++];
     uint16_t r;
     if      mop(instr, 0x00, 0xFF) r=1;
+    else if mop(instr, 0x08, 0xFF) r=ld_ia_sp(instr, s); // TODO
     else if mop(instr, 0x10, 0xFF) r=stop(instr, s);
     else if mop(instr, 0x07, 0xE7) r=ra(instr, s);
     else if mop(instr, 0x01, 0xCF) r=ldi_16(instr, s);
-    else if mop(instr, 0x08, 0xFF) ; // TODO
     else if mop(instr, 0x08, 0xCF) r=jr(instr, s);
+    else if mop(instr, 0x20, 0xFF) ; // TODO
+    else if mop(instr, 0x30, 0xFF) ; // TODO
     else if mop(instr, 0x27, 0xFF) r=daa(instr, s);
     else if mop(instr, 0x37, 0xFF) r=scf(instr, s);
     else if mop(instr, 0x2F, 0xFF) r=cpl(instr, s);
@@ -593,6 +606,7 @@ uint16_t step(gb_t *s) {
     else if mop(instr, 0xB8, 0xF8) r=cp(instr, s);
     else if mop(instr, 0xCB, 0xFF) r=cb(instr, s);
     else if mop(instr, 0xC1, 0xCF) r=pop(instr, s);
+    else if mop(instr, 0xC3, 0xFF) ; // TODO
     else if mop(instr, 0xC5, 0xCF) r=push(instr, s);
     else if mop(instr, 0xC0, 0xE7) r=retcond(instr, s);
     else if mop(instr, 0xC9, 0xEF) r=ret(instr, s);
