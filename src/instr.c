@@ -29,14 +29,19 @@ uint16_t incdec_16(uint8_t instr, gb_t *s) {
 
 uint16_t incdec(uint8_t instr, gb_t *s) {
     uint8_t reg_idx = (instr >> 3) & 0x07;
-    uint8_t delta = 1 - 2 * (instr & 0x01);
+    int8_t delta = 1 - 2 * (instr & 0x01);
     uint8_t cycles = 0;
     memgrb prev_val = get_reg_from_bits(reg_idx, s);
     cycles += prev_val.cycles;
     uint8_t sum = prev_val.val+delta;
     cycles += set_reg_from_bits(reg_idx, sum, s);
-    // this is so stupid, why is this what halfcarry expects >_>
-    set_flags(s, !sum, delta>127, (prev_val.val & 0x0F) == 0x0F, LEAVE_BIT_AS_IS);
+    uint8_t hc;
+    if (delta > 0){
+        hc = calc_add_halfcarry_8(prev_val.val, delta, 0);
+    } else {
+        hc = calc_sub_halfcarry_8(prev_val.val, -delta, 0);
+    }
+    set_flags(s, !sum, delta<0, hc, LEAVE_BIT_AS_IS);
     return cycles-1;
 }
 
