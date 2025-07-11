@@ -448,9 +448,10 @@ uint16_t ld_ia(uint8_t instr, gb_t *s){
     uint16_t addr;
     if (instr & 0x08) { // two-byte load immediate
         cycles = 4;
-        addr = s->ram[s->pc++];
+        addr = s->ram[s->pc+1];
         addr <<= 8;
-        addr += s->ram[s->pc++];
+        addr += s->ram[s->pc];
+        s->pc+=2;
     } else {
         cycles = 3;
         addr = 0xFF00;
@@ -477,7 +478,6 @@ uint16_t step(gb_t *s) {
     else if mop(instr, 0x76, 0xFF) r=halt();
     else if mop(instr, 0xF8, 0xFF) r=ld_hl_sp(instr,s);
     else if mop(instr, 0xF9, 0xFF) r=ld_sp_hl(instr,s);
-    else if mop(instr, 0xFA, 0xFF) ;
     else if mop(instr, 0xFB, 0xFF) r=ei(instr, s);
     else if mop(instr, 0x02, 0xC7) r=ld_ext(instr, s);
     else if mop(instr, 0x03, 0xC7) r=incdec_16(instr, s);
@@ -502,6 +502,6 @@ uint16_t step(gb_t *s) {
     else if mop(instr, 0xC7, 0xC7) r=rst(instr, s);
     else if mop(instr, 0xE0, 0xEF) r=ld_ia(instr, s);
     else if mop(instr, 0xEA, 0xEF) r=ld_ia(instr, s);
-
+    // else printf("unknown instr!\n");
     return r;
 }
