@@ -71,7 +71,7 @@ int main(int argc, char* argv[]) {
                 uint8_t c = step(gameboy_state);
                 gameboy_state->cycles += c;
             }
-
+            printf("%x\n", gameboy_state->pc);
             if (scanline == 144) {
                 gameboy_state->ram[0xFF0F] |= 1;
             }
