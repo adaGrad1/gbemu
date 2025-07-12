@@ -17,6 +17,19 @@ void handle_interrupts(gb_t *s){
   }
 }
 
+uint16_t oam_dma(gb_t *s){
+  // printf("DMA OAM\n");
+  uint16_t bytes_to_copy = 0x100;
+  uint16_t start_addr = (s->ram[0xFF46]) << 8;
+  uint16_t OAM_start = 0xFE00;
+
+  for(uint16_t i = 0; i < bytes_to_copy; i++){
+    s->ram[OAM_start+i] = s->ram[start_addr+i];
+  }
+
+  s->ram[0xFF46] = 0;
+}
+
 uint16_t step(gb_t *s) {
     uint8_t instr = s->ram[s->pc++];
     uint16_t r;
@@ -67,5 +80,10 @@ uint16_t step(gb_t *s) {
     else if mop(instr, 0xE8, 0xFF) r=adi_sp(instr, s);
     else if mop(instr, 0xE9, 0xFF) r=jp_hl(instr, s);
     else printf("unknown opcode!!\n");
+
+    if (s->ram[0xFF46]){
+      oam_dma(s);
+    }
+
     return r;
 }
