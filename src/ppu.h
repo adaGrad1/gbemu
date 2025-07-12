@@ -6,11 +6,11 @@
 #include "util.h"
 #include "main.h"
 
-#define WIDTH 256
-#define HEIGHT 256
+#define WIDTH 160
+#define HEIGHT 144
 
 typedef struct ppu {
-    uint8_t display[WIDTH][HEIGHT];
+    uint8_t display[HEIGHT][WIDTH];
     uint8_t scanline;
 } ppu_t;
 

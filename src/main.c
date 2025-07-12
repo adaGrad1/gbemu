@@ -25,7 +25,7 @@
 #define SM83_DIR "./sm83/v1/"
 #define WINDOW_TITLE "Game Boy Emulator"
 #define TARGET_FPS 60
-#define WIN_SCALE 5
+#define WIN_SCALE 4
 
 struct dim {
     size_t h;
@@ -38,7 +38,7 @@ int main(int argc, char* argv[]) {
         exit(0);
     }
     // PPU uses overdrawn 256x256 screen
-    struct dim vdim = { .w = 256, .h = 256 };
+    struct dim vdim = { .w = WIDTH, .h = HEIGHT };
     // physical screen
     struct dim pdim = { .w = vdim.w * WIN_SCALE, .h = vdim.h * WIN_SCALE };
     gb_t *gameboy_state = calloc(1, sizeof(gb_t));
@@ -59,7 +59,7 @@ int main(int argc, char* argv[]) {
     SetTargetFPS(TARGET_FPS);
     
     // Create texture for PPU framebuffer
-    Image ppu_image = GenImageColor(256, 256, BLACK);
+    Image ppu_image = GenImageColor(WIDTH, HEIGHT, BLACK);
     Texture2D ppu_texture = LoadTextureFromImage(ppu_image);
     UnloadImage(ppu_image);
     gameboy_state->pc = 0x100;
@@ -78,19 +78,20 @@ int main(int argc, char* argv[]) {
             }
             gameboy_state->cycles -= 456;
             if(scanline < 144) {
+                ppu->scanline = scanline;
                 update_ppu(ppu, gameboy_state);
             }
         }
         // printf("PC: %x\n", gameboy_state->pc);
 
         // Convert PPU display buffer to raylib texture
-        Color pixels[256 * 256];
-        for (int y = 0; y < 256; y++) {
-            for (int x = 0; x < 256; x++) {
+        Color pixels[HEIGHT * WIDTH];
+        for (int y = 0; y < HEIGHT; y++) {
+            for (int x = 0; x < WIDTH; x++) {
                 uint8_t pixel_val = ppu->display[y][x];
                 // Convert Game Boy 2-bit color to grayscale
                 uint8_t gray_val = 255 - (pixel_val * 85); // 0->255, 1->170, 2->85, 3->0
-                pixels[y * 256 + x] = (Color){ gray_val, gray_val, gray_val, 255 };
+                pixels[y * WIDTH + x] = (Color){ gray_val, gray_val, gray_val, 255 };
             }
         }
         UpdateTexture(ppu_texture, pixels);
