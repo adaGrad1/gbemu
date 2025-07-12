@@ -240,7 +240,7 @@ void dump_rom(struct string *rom_data) {
     }
     printf("\n");
 }
-// #define ONLY_TESTS=1;
+// #define ONLY_TESTS 1
 int main(int argc, char* argv[]) {
 #ifdef ONLY_TESTS
     char **filenames = calloc(1024, sizeof(char*));
@@ -282,12 +282,27 @@ int main(int argc, char* argv[]) {
     }
     printf("%d / %d opcodes fully passed tests\n", successes, tests_run);
 #else
-    // Game Boy screen: 160px across by 144px
-    struct dim vdim = { .w = 160, .h = 144 };
+    // PPU uses overdrawn 256x256 screen
+    struct dim vdim = { .w = 256, .h = 256 };
     // physical screen
-    struct dim pdim = { .w = vdim.w * WIN_SCALE * 2, .h = vdim.h * WIN_SCALE };
+    struct dim pdim = { .w = vdim.w * WIN_SCALE, .h = vdim.h * WIN_SCALE };
     gb_t *gameboy_state = calloc(1, sizeof(gb_t));
-    ppu_t *ppu = calloc(1, sizeof(ppu));
+    ppu_t *ppu = calloc(1, sizeof(ppu_t));
+    
+    // Initialize Game Boy state after boot ROM
+    gameboy_state->pc = 0x0100;  // ROM entry point
+    gameboy_state->sp = 0xFFFE;  // Stack pointer
+    gameboy_state->reg[RA] = 0x01;  // A register
+    gameboy_state->reg[RF] = 0xB0;  // Flags
+    gameboy_state->reg[RB] = 0x00;  // B
+    gameboy_state->reg[RC] = 0x13;  // C
+    gameboy_state->reg[RD] = 0x00;  // D
+    gameboy_state->reg[RE] = 0xD8;  // E
+    gameboy_state->reg[RH] = 0x01;  // H
+    gameboy_state->reg[RL] = 0x4D;  // L
+    
+    // Initialize PPU registers
+    gameboy_state->ram[0xFF40] = 0x91;  // LCDC - LCD enabled, BG on
     FILE *fp = fopen("./roms/tetris.gb", "rb");
     if (!fp) {
         printf("File not found!\n");
@@ -295,19 +310,66 @@ int main(int argc, char* argv[]) {
     }
     int bytesRead =
       fread(gameboy_state->ram, 1, 0x10000, fp);
-    // assert (read_file("./roms/tetris.gb", gameboy_state->ram) == 0
-    //         && "Failed to load tetris rom");
-    /* dump_rom(&rom_data); */
+    fclose(fp);
 
     InitWindow(pdim.w, pdim.h, WINDOW_TITLE);
     SetTargetFPS(TARGET_FPS);
-    while (!WindowShouldClose()) {
+    
+    // Create texture for PPU framebuffer
+    Image ppu_image = GenImageColor(256, 256, BLACK);
+    Texture2D ppu_texture = LoadTextureFromImage(ppu_image);
+    UnloadImage(ppu_image);
+    
+    // Run a few thousand cycles to see what happens
+    for (int i = 0; i < 50000; i++) {
+        uint16_t old_pc = gameboy_state->pc;
         gameboy_state->cycles += step(gameboy_state);
+        
+        if (i % 100 == 0) {
+            printf("Step %d: PC: 0x%04X -> 0x%04X, cycles: %llu\n", 
+                   i, old_pc, gameboy_state->pc, gameboy_state->cycles);
+        }
+        
+        // Check if any VRAM has been written
+        if (i % 1000 == 0) {
+            printf("VRAM check: 0x8000=%02X 0x8001=%02X, tilemap: 0x9800=%02X 0x9801=%02X\n",
+                   gameboy_state->ram[0x8000], gameboy_state->ram[0x8001],
+                   gameboy_state->ram[0x9800], gameboy_state->ram[0x9801]);
+        }
+    }
+    
+    printf("After 5000 steps, entering main loop...\n");
+    
+    while (!WindowShouldClose()) {
+        uint16_t old_pc = gameboy_state->pc;
+        for(int q = 0; q < 10000; q++){
+            gameboy_state->ram[0xFF0F] = 1;
+            gameboy_state->ram[0xFF44] = (gameboy_state->ram[0xFF44]+1) % 154;
+            for(int i = 0; i < 10; i++){
+                gameboy_state->cycles += step(gameboy_state);
+            }
+        }
+        update_ppu(ppu, gameboy_state);
+
+        // Convert PPU display buffer to raylib texture
+        Color pixels[256 * 256];
+        for (int y = 0; y < 256; y++) {
+            for (int x = 0; x < 256; x++) {
+                uint8_t pixel_val = ppu->display[y][x];
+                // Convert Game Boy 2-bit color to grayscale
+                uint8_t gray_val = 255 - (pixel_val * 85); // 0->255, 1->170, 2->85, 3->0
+                pixels[y * 256 + x] = (Color){ gray_val, gray_val, gray_val, 255 };
+            }
+        }
+        UpdateTexture(ppu_texture, pixels);
 
         BeginDrawing();
-        ClearBackground((Color) { .r = 0, .g = 0, .b = 0, .a = 255 });
+        ClearBackground(BLACK);
+        DrawTextureEx(ppu_texture, (Vector2){0, 0}, 0.0f, WIN_SCALE, WHITE);
         EndDrawing();
     }
+    
+    UnloadTexture(ppu_texture);
     CloseWindow();
 #endif // ONLY_TESTS
 

@@ -7,7 +7,7 @@
 #include "main.h"
 
 typedef struct ppu {
-    uint8_t display[144][160];
+    uint8_t display[256][256];
 } ppu_t;
 
 void update_ppu(ppu_t* p, gb_t* s);
