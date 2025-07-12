@@ -292,6 +292,7 @@ uint16_t ret(uint8_t instr, gb_t* s) {
 void _call(uint16_t addr, gb_t* s){
     s->ram[--(s->sp)] = s->pc >> 8;
     s->ram[--(s->sp)] = s->pc;
+    printf("CALLING FN FROM %x TO %x\n", s->pc, addr);
     s->pc = addr;
 }
 

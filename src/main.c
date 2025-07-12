@@ -17,11 +17,12 @@
 #include "instr.h"
 #include "ppu.h"
 #include "main.h"
+#include "joypad.h"
 
 
 #define SM83_DIR "./sm83/v1/"
 #define WINDOW_TITLE "Game Boy Emulator"
-#define TARGET_FPS 10
+#define TARGET_FPS 600
 #define WIN_SCALE 5
 
 struct dim {
@@ -320,36 +321,20 @@ int main(int argc, char* argv[]) {
     Texture2D ppu_texture = LoadTextureFromImage(ppu_image);
     UnloadImage(ppu_image);
     
-    // Run a few thousand cycles to see what happens
-    for (int i = 0; i < 50000; i++) {
-        uint16_t old_pc = gameboy_state->pc;
-        gameboy_state->cycles += step(gameboy_state);
-        
-        if (i % 100 == 0) {
-            printf("Step %d: PC: 0x%04X -> 0x%04X, cycles: %llu\n", 
-                   i, old_pc, gameboy_state->pc, gameboy_state->cycles);
-        }
-        
-        // Check if any VRAM has been written
-        if (i % 1000 == 0) {
-            printf("VRAM check: 0x8000=%02X 0x8001=%02X, tilemap: 0x9800=%02X 0x9801=%02X\n",
-                   gameboy_state->ram[0x8000], gameboy_state->ram[0x8001],
-                   gameboy_state->ram[0x9800], gameboy_state->ram[0x9801]);
-        }
-    }
-    
-    printf("After 5000 steps, entering main loop...\n");
-    
     while (!WindowShouldClose()) {
         uint16_t old_pc = gameboy_state->pc;
-        for(int q = 0; q < 10000; q++){
+        for(int scanline = 0; scanline < 154; scanline++){
             gameboy_state->ram[0xFF0F] = 1;
-            gameboy_state->ram[0xFF44] = (gameboy_state->ram[0xFF44]+1) % 154;
-            for(int i = 0; i < 10; i++){
+            gameboy_state->ram[0xFF44] = scanline;
+            while(gameboy_state->cycles < 456){
                 gameboy_state->cycles += step(gameboy_state);
+                update_joypad(gameboy_state);
             }
+            gameboy_state->cycles -= 456;
+            update_ppu(ppu, gameboy_state);
         }
-        update_ppu(ppu, gameboy_state);
+        printf("PC: %x\n", gameboy_state->pc);
+        printf("joypad: %x\n", gameboy_state->ram[0xFF00]);
 
         // Convert PPU display buffer to raylib texture
         Color pixels[256 * 256];
