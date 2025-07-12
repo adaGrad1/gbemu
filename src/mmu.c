@@ -55,9 +55,9 @@ void update_joypad(gb_t* s){
 
 uint8_t get_mem(gb_t* s, uint16_t addr) {
     if (s->test_mode) return s->ram[addr];
-    // if((0xE000 <= addr) && (addr < 0xFE00)) { // Echo RAM
-    //     return s->ram[addr-0x2000];
-    // }
+    if((0xE000 <= addr) && (addr < 0xFE00)) { // Echo RAM
+        return s->ram[addr-0x2000];
+    }
     else if((addr >= 0xFF00) && (addr < 0xFF80)) { // MMIO
         // TODO serial transfer
         // TODO timer / divider
@@ -86,15 +86,15 @@ void set_mem(gb_t* s, uint16_t addr, uint8_t value) {
     if(addr < 0x8000){ // ROM -- can't set
         return;
     }
-    // else if((0xA000 <= addr) && (addr < 0xC000)) { // cart RAM
-    //     return;
-    // }
+    else if((0xA000 <= addr) && (addr < 0xC000)) { // cart RAM
+        return;
+    }
     else if((0xE000 <= addr) && (addr < 0xFE00)) { // Echo RAM
         s->ram[addr-0x2000] = value;
     }
-    // else if((0xFEA0 <= addr) && (addr < 0xFEFF)) {
-    //     return; // Not usable!
-    // }
+    else if((0xFEA0 <= addr) && (addr < 0xFEFF)) {
+        return; // Not usable!
+    }
     else if((addr >= 0xFF00) && (addr < 0xFF80)) { // MMIO
         // TODO serial transfer
         // TODO timer / divider
@@ -105,6 +105,7 @@ void set_mem(gb_t* s, uint16_t addr, uint8_t value) {
         if (addr == 0xFF04){
             s->ram[0xFF04] = 0;
         } else if (addr == 0xFF46){
+            s->ram[addr] = value;
             oam_dma(s);
         } else {
             s->ram[addr] = value;
