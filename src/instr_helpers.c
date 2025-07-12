@@ -3,6 +3,7 @@
 
 #include "util.h"
 #include "instr_helpers.h"
+#include "mmu.h"
 
 const uint8_t BITS_TO_REG_IDX[] = {
     RB,
@@ -20,7 +21,7 @@ uint8_t get_mem_at_reg(gb_t* s, uint8_t reg_idx){
     uint16_t ptr = s->reg[reg_idx];
     ptr <<= 8;
     ptr += s->reg[reg_idx+1];
-    return s->ram[ptr];
+    return get_mem(s, ptr);
 }
 
 memgrb get_reg_from_bits(uint8_t bits, gb_t* s) {
@@ -49,7 +50,7 @@ void adi_regpair(int16_t val, gb_t* s, uint8_t reg_idx){
 }
 void set_mem_at_reg(uint8_t val, gb_t* s, uint8_t reg_idx) {
     uint16_t ptr = (s->reg[reg_idx] << 8) + (s->reg[reg_idx+1]);
-    s->ram[ptr] = val;
+    set_mem(s, ptr, val);
 }
 
 uint16_t set_reg_from_bits(uint8_t idx, uint8_t val, gb_t* s) {

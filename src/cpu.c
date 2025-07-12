@@ -1,6 +1,7 @@
 #include "main.h"
 #include "instr.h"
 #include "instr_helpers.h"
+#include "mmu.h"
 
 #define mop(instr, match, mask) ((instr & mask) == match)
 
@@ -12,23 +13,14 @@ void handle_interrupts(gb_t *s){
       if (s->ram[0xFF0F] & 1) {
         s->pc = 0x0040;
         set_bit(s->ram[0xFF0F], 0, 0);
+      } else if(s->ram[0xFF0F] & 4) {
+        s->pc = 0x0050;
+        set_bit(s->ram[0xFF0F], 2, 0);
       }
       s->ei = 0;
   }
 }
 
-uint16_t oam_dma(gb_t *s){
-  // printf("DMA OAM\n");
-  uint16_t bytes_to_copy = 0x100;
-  uint16_t start_addr = (s->ram[0xFF46]) << 8;
-  uint16_t OAM_start = 0xFE00;
-
-  for(uint16_t i = 0; i < bytes_to_copy; i++){
-    s->ram[OAM_start+i] = s->ram[start_addr+i];
-  }
-
-  s->ram[0xFF46] = 0;
-}
 
 uint16_t step(gb_t *s) {
     uint8_t instr = s->ram[s->pc++];
@@ -80,10 +72,7 @@ uint16_t step(gb_t *s) {
     else if mop(instr, 0xE8, 0xFF) r=adi_sp(instr, s);
     else if mop(instr, 0xE9, 0xFF) r=jp_hl(instr, s);
     else printf("unknown opcode!!\n");
-
-    if (s->ram[0xFF46] && !s->test_mode){
-      oam_dma(s);
-    }
-
+    if(!s->test_mode) update_timer(s, r);
+    s->cycles_total+=r;
     return r;
 }

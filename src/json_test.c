@@ -272,7 +272,7 @@ int json_test_main(int argc, char* argv[]) {
         printf("running test %s -- ", filenames[i]);
         #ifdef VERBOSE
         sm83_test_dump(tests, tests_len);
-        tests_len = 10;
+        // tests_len = 10;
         #endif
         successes += run_tests(tests, tests_len, NULL);
         tests_run++;

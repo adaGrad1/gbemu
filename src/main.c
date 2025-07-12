@@ -20,7 +20,6 @@
 #include "ppu.h"
 #include "main.h"
 #include "cpu.h"
-#include "joypad.h"
 
 
 #define SM83_DIR "./sm83/v1/"
@@ -71,8 +70,6 @@ int main(int argc, char* argv[]) {
                 handle_interrupts(gameboy_state);
                 uint8_t c = step(gameboy_state);
                 gameboy_state->cycles += c;
-                gameboy_state->total_cycles += c;
-                update_joypad(gameboy_state);
             }
 
             if (scanline == 144) {

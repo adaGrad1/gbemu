@@ -342,10 +342,10 @@ uint16_t arith_i(uint8_t instr, gb_t* s) {
     uint8_t b_tmp = s->reg[RB];
     uint8_t ins_tmp = get_mem(s, s->pc);
     s->reg[RB] = get_mem(s, s->pc);
-    set_mem(s, s->pc, (instr & 0xB8));
+    s->ram[s->pc] = (instr & 0xB8); // HACK!
     step(s);
     s->reg[RB] = b_tmp;
-    set_mem(s, s->pc-1, ins_tmp);
+    s->ram[s->pc-1] = ins_tmp;
     return 2;
 }
 
