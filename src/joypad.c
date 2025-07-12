@@ -24,6 +24,5 @@ void update_joypad(gb_t* s){
             set_bit(s->ram[0xFF00], 1, !IsKeyDown(KEY_X));
             set_bit(s->ram[0xFF00], 2, !IsKeyDown(KEY_RIGHT_SHIFT));
             set_bit(s->ram[0xFF00], 3, !IsKeyDown(KEY_ENTER));
-            printf("%x\n", s->ram[0xFF00]);
     }
 }

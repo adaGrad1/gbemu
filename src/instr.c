@@ -428,13 +428,11 @@ uint16_t jmp(uint8_t instr, gb_t *s){
 
 }
 uint16_t di(uint8_t instr, gb_t *s){
-    printf("DI!\n");
     s->ei=0;
     return 1;
 }
 
 uint16_t ei(uint8_t instr, gb_t *s){
-    printf("EI!\n");
     s->ei=1;
     return 1;
 }

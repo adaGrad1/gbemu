@@ -252,7 +252,6 @@ void maybe_interrupt(gb_t *s){
 
       // Jump to interrupt vector
       if (s->ram[0xFF0F] & 1) {  // VBlank
-        printf("VBLANK interrupt!\n");
         s->pc = 0x0040;
         set_bit(s->ram[0xFF0F], 0, 0);  // Clear flag
       }
@@ -330,14 +329,17 @@ int main(int argc, char* argv[]) {
     while (!WindowShouldClose()) {
         uint16_t old_pc = gameboy_state->pc;
         for(int scanline = 0; scanline < 154; scanline++){
-            gameboy_state->ram[0xFF0F] = 1;
             gameboy_state->ram[0xFF44] = scanline;
             while(gameboy_state->cycles < 456){
                 maybe_interrupt(gameboy_state);
-                gameboy_state->cycles += step(gameboy_state);
+                uint8_t c = step(gameboy_state);
+                gameboy_state->cycles += c;
+                gameboy_state->total_cycles += c;
                 update_joypad(gameboy_state);
             }
-            if (scanline == 144) gameboy_state->ram[0xFF0F] |= 1;
+            if (scanline == 144) {
+                gameboy_state->ram[0xFF0F] |= 1;
+            }
             gameboy_state->cycles -= 456;
             if(scanline < 144) {
                 update_ppu(ppu, gameboy_state);
