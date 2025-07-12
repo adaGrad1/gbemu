@@ -8,6 +8,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdint.h>
+#include <math.h>
 
 #include <cJSON.h>
 #include <raylib.h>
