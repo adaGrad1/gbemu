@@ -14,6 +14,7 @@
 
 #include "util.h"
 #include "jtest.h"
+#include "instr_helpers.h"
 #include "instr.h"
 #include "ppu.h"
 #include "main.h"
@@ -241,6 +242,23 @@ void dump_rom(struct string *rom_data) {
     }
     printf("\n");
 }
+
+void maybe_interrupt(gb_t *s){
+  // Check if interrupts should be processed
+  if (s->ei && (s->ram[0xFF0F] & s->ram[0xFFFF])) {
+      // Save PC to stack
+      s->ram[--(s->sp)] = s->pc >> 8;
+      s->ram[--(s->sp)] = s->pc & 0xFF;
+
+      // Jump to interrupt vector
+      if (s->ram[0xFF0F] & 1) {  // VBlank
+        printf("VBLANK interrupt!\n");
+        s->pc = 0x0040;
+        set_bit(s->ram[0xFF0F], 0, 0);  // Clear flag
+      }
+      s->ei = 0;  // Disable interrupts
+  }
+}
 // #define ONLY_TESTS 1
 int main(int argc, char* argv[]) {
 #ifdef ONLY_TESTS
@@ -291,19 +309,7 @@ int main(int argc, char* argv[]) {
     ppu_t *ppu = calloc(1, sizeof(ppu_t));
     
     // Initialize Game Boy state after boot ROM
-    gameboy_state->pc = 0x0100;  // ROM entry point
-    gameboy_state->sp = 0xFFFE;  // Stack pointer
-    gameboy_state->reg[RA] = 0x01;  // A register
-    gameboy_state->reg[RF] = 0xB0;  // Flags
-    gameboy_state->reg[RB] = 0x00;  // B
-    gameboy_state->reg[RC] = 0x13;  // C
-    gameboy_state->reg[RD] = 0x00;  // D
-    gameboy_state->reg[RE] = 0xD8;  // E
-    gameboy_state->reg[RH] = 0x01;  // H
-    gameboy_state->reg[RL] = 0x4D;  // L
     
-    // Initialize PPU registers
-    gameboy_state->ram[0xFF40] = 0x91;  // LCDC - LCD enabled, BG on
     FILE *fp = fopen("./roms/tetris.gb", "rb");
     if (!fp) {
         printf("File not found!\n");
@@ -327,14 +333,17 @@ int main(int argc, char* argv[]) {
             gameboy_state->ram[0xFF0F] = 1;
             gameboy_state->ram[0xFF44] = scanline;
             while(gameboy_state->cycles < 456){
+                maybe_interrupt(gameboy_state);
                 gameboy_state->cycles += step(gameboy_state);
                 update_joypad(gameboy_state);
             }
+            if (scanline == 144) gameboy_state->ram[0xFF0F] |= 1;
             gameboy_state->cycles -= 456;
-            update_ppu(ppu, gameboy_state);
+            if(scanline < 144) {
+                update_ppu(ppu, gameboy_state);
+            }
         }
         printf("PC: %x\n", gameboy_state->pc);
-        printf("joypad: %x\n", gameboy_state->ram[0xFF00]);
 
         // Convert PPU display buffer to raylib texture
         Color pixels[256 * 256];
