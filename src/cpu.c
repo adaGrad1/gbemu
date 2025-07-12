@@ -33,6 +33,7 @@ uint16_t oam_dma(gb_t *s){
 uint16_t step(gb_t *s) {
     uint8_t instr = s->ram[s->pc++];
     uint16_t r;
+    printf("%4x: %2x\n", s->pc, instr);
     if      mop(instr, 0x00, 0xFF) r=1;
     else if mop(instr, 0xFB, 0xFF) r=ei(instr, s);
     else if mop(instr, 0x08, 0xFF) r=ld_ia_sp(instr, s); // TODO
@@ -81,7 +82,7 @@ uint16_t step(gb_t *s) {
     else if mop(instr, 0xE9, 0xFF) r=jp_hl(instr, s);
     else printf("unknown opcode!!\n");
 
-    if (s->ram[0xFF46]){
+    if (s->ram[0xFF46] && !s->test_mode){
       oam_dma(s);
     }
 

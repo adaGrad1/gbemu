@@ -68,6 +68,7 @@ struct gbstate test_gbstate_to_gbstate(struct test_gbstate s){
             to_ret.reg[reg_idx] = kv.v;
         }
     }
+    to_ret.test_mode=1;
     return to_ret;
 }
 

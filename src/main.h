@@ -24,6 +24,7 @@ typedef struct gbstate {
     uint64_t total_cycles;
     unsigned char reg[REG_LEN];
     unsigned char ram[GBR_LEN];
+    uint8_t test_mode;
 } gb_t;
 
 #endif

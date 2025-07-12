@@ -25,7 +25,7 @@
 
 #define SM83_DIR "./sm83/v1/"
 #define WINDOW_TITLE "Game Boy Emulator"
-#define TARGET_FPS 60
+#define TARGET_FPS 600
 #define WIN_SCALE 4
 
 struct dim {
@@ -74,6 +74,7 @@ int main(int argc, char* argv[]) {
                 gameboy_state->total_cycles += c;
                 update_joypad(gameboy_state);
             }
+
             if (scanline == 144) {
                 gameboy_state->ram[0xFF0F] |= 1;
             }
@@ -83,7 +84,6 @@ int main(int argc, char* argv[]) {
                 update_ppu(ppu, gameboy_state);
             }
         }
-        // printf("PC: %x\n", gameboy_state->pc);
 
         // Convert PPU display buffer to raylib texture
         Color pixels[HEIGHT * WIDTH];
