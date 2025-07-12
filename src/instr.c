@@ -4,6 +4,7 @@
 #include "util.h"
 #include "instr_helpers.h"
 #include "cpu.h"
+#include "mmu.h"
 #define mop(instr, match, mask) ((instr & mask) == match)
 
 #define max(a,b) a > b ? a : b
@@ -69,9 +70,9 @@ uint16_t ld_ext(uint8_t instr, gb_t *s) {
 }
 
 uint16_t ldi_16(uint8_t instr, gb_t *s) {
-    uint16_t val = s->ram[s->pc+1];
+    uint16_t val = get_mem(s, s->pc+1);
     val <<= 8;
-    val += s->ram[s->pc];
+    val += get_mem(s, s->pc);
     s->pc+=2;
 
     uint8_t reg_idx = 2 * ((instr >> 4) & 0x03);
@@ -89,7 +90,7 @@ uint16_t ldi_16(uint8_t instr, gb_t *s) {
 
 uint16_t ldi(uint8_t instr, gb_t *s) {
     uint8_t reg_idx = (instr >> 3) & 0x07; // bits 
-    uint8_t val = s->ram[s->pc++];
+    uint8_t val = get_mem(s, s->pc++);
     return 1+set_reg_from_bits(reg_idx, val, s);
 }
 
@@ -239,11 +240,11 @@ uint16_t pop(uint8_t instr, gb_t *s)
     uint8_t reg_idx = 2 * ((instr >> 4) & 0x03);
     uint8_t AF_case = (((instr >> 4) & 0x03) == 0x03);
     if(AF_case) {
-        s->reg[RF] = s->ram[s->sp++] & 0xF0;
-        s->reg[RA] = s->ram[s->sp++];
+        s->reg[RF] = get_mem(s, s->sp++) & 0xF0;
+        s->reg[RA] = get_mem(s, s->sp++);
     } else {
-        set_reg_from_bits(reg_idx+1, s->ram[s->sp++], s);
-        set_reg_from_bits(reg_idx, s->ram[s->sp++], s);
+        set_reg_from_bits(reg_idx+1, get_mem(s, s->sp++), s);
+        set_reg_from_bits(reg_idx, get_mem(s, s->sp++), s);
     }
     return 3;
 }
@@ -255,15 +256,15 @@ uint16_t push(uint8_t instr, gb_t *s)
     if(AF_case) {
         reg_idx += 1;
     }
-        s->ram[--(s->sp)] = get_reg_from_bits(reg_idx, s).val;
-        s->ram[--(s->sp)] = get_reg_from_bits(reg_idx+1, s).val;
+        set_mem(s, --(s->sp), get_reg_from_bits(reg_idx, s).val);
+        set_mem(s, --(s->sp), get_reg_from_bits(reg_idx+1, s).val);
     return 4;
 }
 
 void _ret(gb_t* s){
-    s->pc = s->ram[(s->sp)+1];
+    s->pc = get_mem(s, (s->sp)+1);
     s->pc <<= 8;
-    s->pc += s->ram[(s->sp)];
+    s->pc += get_mem(s, (s->sp));
     s->sp+=2;
 }
 
@@ -295,8 +296,8 @@ uint16_t reti(uint8_t instr, gb_t* s) {
 
 
 void _call(uint16_t addr, gb_t* s){
-    s->ram[--(s->sp)] = s->pc >> 8;
-    s->ram[--(s->sp)] = s->pc;
+    set_mem(s, --(s->sp), s->pc >> 8);
+    set_mem(s, --(s->sp), s->pc);
     s->pc = addr;
 }
 
@@ -307,7 +308,7 @@ uint16_t rst(uint8_t instr, gb_t *s) {
 }
 
 uint16_t cb(uint8_t _, gb_t *s) {
-    uint8_t instr = s->ram[s->pc++];
+    uint8_t instr = get_mem(s, s->pc++);
     uint16_t cycles = 2;
     if ((instr & 0x07) == 0x06) { // instr involves RAM
         if((instr & 0xC0) == 0x40) cycles = 3; // only READ from RAM
@@ -339,12 +340,12 @@ uint16_t ra(uint8_t instr, gb_t* s) {
 
 uint16_t arith_i(uint8_t instr, gb_t* s) {
     uint8_t b_tmp = s->reg[RB];
-    uint8_t ins_tmp = s->ram[s->pc];
-    s->reg[RB] = s->ram[s->pc];
-    s->ram[s->pc] = (instr & 0xB8);
+    uint8_t ins_tmp = get_mem(s, s->pc);
+    s->reg[RB] = get_mem(s, s->pc);
+    set_mem(s, s->pc, (instr & 0xB8));
     step(s);
     s->reg[RB] = b_tmp;
-    s->ram[s->pc-1] = ins_tmp;
+    set_mem(s, s->pc-1, ins_tmp);
     return 2;
 }
 
@@ -412,9 +413,9 @@ uint16_t daa(uint8_t instr, gb_t *s){
 uint16_t jmp(uint8_t instr, gb_t *s){
     uint8_t bit_to_check = ((instr >> 4) & 0x01) ? CARRY_FLAG_BIT : ZERO_FLAG_BIT;
     uint8_t cond = !get_bit(s->reg[RF], bit_to_check);
-    uint16_t new_addr = s->ram[s->pc+1];
+    uint16_t new_addr = get_mem(s, s->pc+1);
     new_addr <<= 8;
-    new_addr += s->ram[s->pc];
+    new_addr += get_mem(s, s->pc);
     s->pc+=2;
     if ((instr >> 3) & 0x01){
         cond = !cond;
@@ -438,7 +439,7 @@ uint16_t ei(uint8_t instr, gb_t *s){
 }
 
 uint16_t ld_hl_sp(uint8_t instr, gb_t *s){
-    int8_t offset = s->ram[s->pc++];
+    int8_t offset = get_mem(s, s->pc++);
     uint16_t tgt = s->sp + offset;
     s->reg[RH] = tgt >> 8;
     s->reg[RL] = tgt & 0x00FF;
@@ -464,19 +465,19 @@ uint16_t ld_ia(uint8_t instr, gb_t *s){
     uint16_t addr;
     if (instr & 0x08) { // two-byte load immediate
         cycles = 4;
-        addr = s->ram[s->pc+1];
+        addr = get_mem(s, s->pc+1);
         addr <<= 8;
-        addr += s->ram[s->pc];
+        addr += get_mem(s, s->pc);
         s->pc+=2;
     } else {
         cycles = 3;
         addr = 0xFF00;
-        addr += s->ram[s->pc++];
+        addr += get_mem(s, s->pc++);
     }
     if (instr & 0x10) { // RA -> RAM
-        s->reg[RA] = s->ram[addr];
+        s->reg[RA] = get_mem(s, addr);
     } else {
-        s->ram[addr] = s->reg[RA];
+        set_mem(s, addr, s->reg[RA]);
     }
     return cycles;
 }
@@ -484,16 +485,16 @@ uint16_t ld_ia(uint8_t instr, gb_t *s){
 uint16_t ld_rc_a(uint8_t instr, gb_t *s){
     uint16_t addr = 0xFF00 + s->reg[RC];
     if (instr & 0x10) { // RA -> RAM
-        s->reg[RA] = s->ram[addr];
+        s->reg[RA] = get_mem(s, addr);
     } else {
-        s->ram[addr] = s->reg[RA];
+        set_mem(s, addr, s->reg[RA]);
     }
 
     return 2;
 }
 
 uint16_t adi_sp(uint8_t instr, gb_t *s){
-    int8_t offset = s->ram[s->pc++];
+    int8_t offset = get_mem(s, s->pc++);
     uint8_t carry;
     uint8_t halfcarry;
     carry = calc_add_carry_8(s->sp, offset, 0);
@@ -514,9 +515,9 @@ uint16_t jp_hl(uint8_t instr, gb_t *s){
 uint16_t callcond(uint8_t instr, gb_t *s){
     uint8_t bit_to_check = ((instr >> 4) & 0x01) ? CARRY_FLAG_BIT : ZERO_FLAG_BIT;
     uint8_t cond = !get_bit(s->reg[RF], bit_to_check);
-    uint16_t addr = s->ram[s->pc+1];
+    uint16_t addr = get_mem(s, s->pc+1);
     addr <<= 8;
-    addr += s->ram[s->pc];
+    addr += get_mem(s, s->pc);
     s->pc+=2;
     if ((instr >> 3) & 0x01){
         cond = !cond;
@@ -530,9 +531,9 @@ uint16_t callcond(uint8_t instr, gb_t *s){
 }
 
 uint16_t call(uint8_t instr, gb_t *s){
-    uint16_t addr = s->ram[s->pc+1];
+    uint16_t addr = get_mem(s, s->pc+1);
     addr <<= 8;
-    addr += s->ram[s->pc];
+    addr += get_mem(s, s->pc);
     s->pc+=2;
     _call(addr, s);
     return 6;
@@ -540,7 +541,7 @@ uint16_t call(uint8_t instr, gb_t *s){
 
 uint16_t jr(uint8_t instr, gb_t *s){
     uint16_t cond;
-    int8_t offset = s->ram[s->pc++];
+    int8_t offset = get_mem(s, s->pc++);
     switch((instr >> 4) & 0x03) {
         case 1:
             cond = 1; // unconditional JR
@@ -569,12 +570,12 @@ uint16_t stop(uint8_t instr, gb_t *s) {
 }
 
 uint16_t ld_ia_sp(uint8_t instr, gb_t *s) {
-    uint16_t addr = s->ram[s->pc+1];
+    uint16_t addr = get_mem(s, s->pc+1);
     addr <<= 8;
-    addr += s->ram[s->pc];
+    addr += get_mem(s, s->pc);
     s->pc+=2;
-    s->ram[addr] = s->sp & 0xFF;
-    s->ram[addr+1] = s->sp >> 8;
+    set_mem(s, addr, s->sp & 0xFF);
+    set_mem(s, addr+1, s->sp >> 8);
     return 5;
 }
 
