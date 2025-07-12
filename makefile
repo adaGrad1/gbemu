@@ -15,12 +15,13 @@ endif
 
 build: skeleton gbemu
 
-gbemu: gbemu.o cjson.o jtest.o cpu.o util.o instr.o instr_helpers.o ppu.o joypad.o
+gbemu: gbemu.o cjson.o jtest.o json_test.o cpu.o util.o instr.o instr_helpers.o ppu.o joypad.o
 	$(CC) $(CFLAGS) -o $(BUILD_DIR)/$@ $(BUILD_DIR)/objs/gbemu.o \
 		$(BUILD_DIR)/objs/cjson.o \
 		$(BUILD_DIR)/objs/jtest.o \
 		$(BUILD_DIR)/objs/util.o \
 		$(BUILD_DIR)/objs/cpu.o \
+		$(BUILD_DIR)/objs/json_test.o \
 		$(BUILD_DIR)/objs/instr.o \
 		$(BUILD_DIR)/objs/instr_helpers.o \
 		$(BUILD_DIR)/objs/ppu.o \
@@ -32,6 +33,10 @@ instr.o: src/instr.c
 
 cpu.o: src/cpu.c
 	$(CC) $(CFLAGS) -c -o $(BUILD_DIR)/objs/$@ $<
+
+json_test.o: src/json_test.c
+	$(CC) $(CFLAGS) -c -o $(BUILD_DIR)/objs/$@ $<
+
 
 instr_helpers.o: src/instr_helpers.c
 	$(CC) $(CFLAGS) -c -o $(BUILD_DIR)/objs/$@ $<

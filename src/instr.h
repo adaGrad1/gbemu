@@ -4,7 +4,6 @@
 #include <assert.h>
 #include <stdio.h>
 
-#include "jtest.h"
 #include "util.h"
 #include "main.h"
 // Main instruction execution

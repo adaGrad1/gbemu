@@ -12,7 +12,6 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-#include "jtest.h"
 #include "util.h"
 #include "instr.h"
 #include "main.h"

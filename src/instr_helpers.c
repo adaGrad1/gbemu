@@ -1,7 +1,6 @@
 #include <assert.h>
 #include <stdio.h>
 
-#include "jtest.h"
 #include "util.h"
 #include "instr_helpers.h"
 
