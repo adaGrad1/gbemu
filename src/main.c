@@ -32,11 +32,11 @@ struct dim {
     size_t w;
 };
 
-#define ONLY_TESTS 1
 int main(int argc, char* argv[]) {
-#ifdef ONLY_TESTS
-    json_test_main(argc, argv);
-#else
+    if (argc > 1 && !strcmp(argv[1], "test")){
+        json_test_main(argc-1, argv+1);
+        exit(0);
+    }
     // PPU uses overdrawn 256x256 screen
     struct dim vdim = { .w = 256, .h = 256 };
     // physical screen
@@ -81,7 +81,7 @@ int main(int argc, char* argv[]) {
                 update_ppu(ppu, gameboy_state);
             }
         }
-        printf("PC: %x\n", gameboy_state->pc);
+        // printf("PC: %x\n", gameboy_state->pc);
 
         // Convert PPU display buffer to raylib texture
         Color pixels[256 * 256];
@@ -103,7 +103,6 @@ int main(int argc, char* argv[]) {
     
     UnloadTexture(ppu_texture);
     CloseWindow();
-#endif // ONLY_TESTS
 
     return EXIT_SUCCESS;
 }
