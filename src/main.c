@@ -18,12 +18,13 @@
 #include "instr.h"
 #include "ppu.h"
 #include "main.h"
+#include "cpu.h"
 #include "joypad.h"
 
 
 #define SM83_DIR "./sm83/v1/"
 #define WINDOW_TITLE "Game Boy Emulator"
-#define TARGET_FPS 600
+#define TARGET_FPS 60
 #define WIN_SCALE 5
 
 struct dim {
@@ -243,21 +244,6 @@ void dump_rom(struct string *rom_data) {
     printf("\n");
 }
 
-void maybe_interrupt(gb_t *s){
-  // Check if interrupts should be processed
-  if (s->ei && (s->ram[0xFF0F] & s->ram[0xFFFF])) {
-      // Save PC to stack
-      s->ram[--(s->sp)] = s->pc >> 8;
-      s->ram[--(s->sp)] = s->pc & 0xFF;
-
-      // Jump to interrupt vector
-      if (s->ram[0xFF0F] & 1) {  // VBlank
-        s->pc = 0x0040;
-        set_bit(s->ram[0xFF0F], 0, 0);  // Clear flag
-      }
-      s->ei = 0;  // Disable interrupts
-  }
-}
 // #define ONLY_TESTS 1
 int main(int argc, char* argv[]) {
 #ifdef ONLY_TESTS
@@ -325,13 +311,12 @@ int main(int argc, char* argv[]) {
     Image ppu_image = GenImageColor(256, 256, BLACK);
     Texture2D ppu_texture = LoadTextureFromImage(ppu_image);
     UnloadImage(ppu_image);
-    
+    gameboy_state->pc = 0x100;
     while (!WindowShouldClose()) {
-        uint16_t old_pc = gameboy_state->pc;
         for(int scanline = 0; scanline < 154; scanline++){
             gameboy_state->ram[0xFF44] = scanline;
             while(gameboy_state->cycles < 456){
-                maybe_interrupt(gameboy_state);
+                handle_interrupts(gameboy_state);
                 uint8_t c = step(gameboy_state);
                 gameboy_state->cycles += c;
                 gameboy_state->total_cycles += c;
