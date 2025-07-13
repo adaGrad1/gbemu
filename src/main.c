@@ -21,12 +21,15 @@
 #include "main.h"
 #include "cpu.h"
 #include "mmu.h"
+#include "apu.h"
 
 
 #define SM83_DIR "./sm83/v1/"
 #define WINDOW_TITLE "Game Boy Emulator"
 #define TARGET_FPS 60
 #define WIN_SCALE 4
+#define AUDIO_BUFFER_SIZE 4213440
+#define SAMPLE_RATE 4213440 // CPU cycles per second
 
 struct dim {
     size_t h;
@@ -44,6 +47,11 @@ int main(int argc, char* argv[]) {
     struct dim pdim = { .w = vdim.w * WIN_SCALE, .h = vdim.h * WIN_SCALE };
     gb_t *gameboy_state = calloc(1, sizeof(gb_t));
     ppu_t *ppu = calloc(1, sizeof(ppu_t));
+    apu_t *apu = calloc(1, sizeof(apu_t));
+    
+    // Audio buffer for collecting samples
+    float *audio_buffer = calloc(AUDIO_BUFFER_SIZE, sizeof(float));
+    int audio_buffer_pos = 0;
     
     // Initialize Game Boy state after boot ROM
     
@@ -60,6 +68,12 @@ int main(int argc, char* argv[]) {
     InitWindow(pdim.w, pdim.h, WINDOW_TITLE);
     SetTargetFPS(TARGET_FPS);
     
+    // Initialize audio
+    InitAudioDevice();
+    SetAudioStreamBufferSizeDefault(AUDIO_BUFFER_SIZE);
+    AudioStream audio_stream = LoadAudioStream(SAMPLE_RATE, 32, 1);
+    PlayAudioStream(audio_stream);
+    
     // Create texture for PPU framebuffer
     Image ppu_image = GenImageColor(WIDTH, HEIGHT, BLACK);
     Texture2D ppu_texture = LoadTextureFromImage(ppu_image);
@@ -72,6 +86,21 @@ int main(int argc, char* argv[]) {
                 handle_interrupts(gameboy_state);
                 uint8_t c = step(gameboy_state);
                 gameboy_state->cycles += c;
+                
+                // Generate audio samples for each CPU cycle
+                float sample = tick_apu(apu, gameboy_state);
+                for (int cycle = 0; cycle < c; cycle++) {
+                    if(audio_buffer_pos < AUDIO_BUFFER_SIZE)
+                        audio_buffer[audio_buffer_pos++] = sample;
+                    
+                    // Submit buffer when full
+                    if (audio_buffer_pos >= AUDIO_BUFFER_SIZE / 2) {
+                        if (IsAudioStreamProcessed(audio_stream)) {
+                            UpdateAudioStream(audio_stream, audio_buffer, audio_buffer_pos);
+                            audio_buffer_pos = 0;
+                        }
+                    }
+                }
             }
             if (scanline == 144) {
                 gameboy_state->ram[0xFF0F] |= 1;
@@ -102,6 +131,8 @@ int main(int argc, char* argv[]) {
     }
     
     UnloadTexture(ppu_texture);
+    UnloadAudioStream(audio_stream);
+    CloseAudioDevice();
     CloseWindow();
 
     return EXIT_SUCCESS;
