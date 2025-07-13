@@ -2,6 +2,11 @@
 #include "mmu.h"
 #include "instr_helpers.h"
 
+void mmu_init(gb_t* s){
+    s->sp = 0xFFFE;
+    memcpy(s->ram, s->rom, 0x8000); 
+}
+
 const uint16_t freqs[] = {256, 4, 16, 64};
 uint16_t oam_dma(gb_t *s){
   uint16_t bytes_to_copy = 0x100;
@@ -11,7 +16,6 @@ uint16_t oam_dma(gb_t *s){
   for(uint16_t i = 0; i < bytes_to_copy; i++){
     s->ram[OAM_start+i] = s->ram[start_addr+i];
   }
-
   s->ram[0xFF46] = 0;
 }
 
@@ -78,17 +82,34 @@ uint8_t get_mem(gb_t* s, uint16_t addr) {
 
 
 
+enum MBC{
+NO_MBC = 0,
+MBC1 = 1,
+MBC2 = 5
+};
+
 void set_mem(gb_t* s, uint16_t addr, uint8_t value) {
     if (s->test_mode){
         s->ram[addr] = value;
         return;
     }
     if(addr < 0x8000){ // ROM -- can't set
+        switch(s->ram[0x0147]){
+            case NO_MBC:
+                break;
+            case MBC1:
+                uint8_t bank_no = value & 0x1F;
+                if(bank_no == 0) bank_no = 1;
+                memcpy(s->ram+0x4000, s->rom+(0x4000*bank_no), 0x4000); 
+                break;
+            default:
+                printf("UNKNOWN MEMBANK!!!\n");
+        }
         return;
     }
-    else if((0xA000 <= addr) && (addr < 0xC000)) { // cart RAM
-        return;
-    }
+    // else if((0xA000 <= addr) && (addr < 0xC000)) { // cart RAM
+    //     return;
+    // }
     else if((0xE000 <= addr) && (addr < 0xFE00)) { // Echo RAM
         s->ram[addr-0x2000] = value;
     }

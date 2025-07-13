@@ -20,6 +20,7 @@
 #include "ppu.h"
 #include "main.h"
 #include "cpu.h"
+#include "mmu.h"
 
 
 #define SM83_DIR "./sm83/v1/"
@@ -46,14 +47,15 @@ int main(int argc, char* argv[]) {
     
     // Initialize Game Boy state after boot ROM
     
-    FILE *fp = fopen("./roms/tetris.gb", "rb");
+    FILE *fp = fopen("./roms/kirby.gb", "rb");
     if (!fp) {
         printf("File not found!\n");
         exit(1);
     }
     int bytesRead =
-      fread(gameboy_state->ram, 1, 0x10000, fp);
+      fread(gameboy_state->rom, 1, 1 << 20, fp);
     fclose(fp);
+    mmu_init(gameboy_state);
 
     InitWindow(pdim.w, pdim.h, WINDOW_TITLE);
     SetTargetFPS(TARGET_FPS);

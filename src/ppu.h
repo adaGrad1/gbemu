@@ -12,8 +12,8 @@
 typedef struct ppu {
     uint8_t display[HEIGHT][WIDTH];
     uint8_t scanline;
-    uint8_t* viewport_x;
-    uint8_t* viewport_y;
+    uint8_t viewport_x;
+    uint8_t viewport_y;
 } ppu_t;
 
 void update_ppu(ppu_t* p, gb_t* s);

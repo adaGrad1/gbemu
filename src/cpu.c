@@ -2,6 +2,7 @@
 #include "instr.h"
 #include "instr_helpers.h"
 #include "mmu.h"
+#include <unistd.h>
 
 #define mop(instr, match, mask) ((instr & mask) == match)
 
@@ -13,6 +14,9 @@ void handle_interrupts(gb_t *s){
       if (s->ram[0xFF0F] & 1) {
         s->pc = 0x0040;
         set_bit(s->ram[0xFF0F], 0, 0);
+      } else if(s->ram[0xFF0F] & 2) {
+        s->pc = 0x0048;
+        set_bit(s->ram[0xFF0F], 1, 0);
       } else if(s->ram[0xFF0F] & 4) {
         s->pc = 0x0050;
         set_bit(s->ram[0xFF0F], 2, 0);
