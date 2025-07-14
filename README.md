@@ -1,4 +1,7 @@
 # Game Boy Emulator
+A working gameboy (classic, not color) emulator! Not aiming for any semblance of accuracy.
+
+Currently tested + playable with Tetris and Kirby's Dream Land
 
 ## Build
 
