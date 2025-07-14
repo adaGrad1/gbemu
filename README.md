@@ -1,7 +1,7 @@
 # Game Boy Emulator
-A working gameboy (classic, not color) emulator! Not aiming for cycle-accuracy; this is my first proper emulator so I'm just aiming for accurate CPU instructions and playable games.
+A working gameboy (classic, not color) emulator! Currently not aiming for cycle-accuracy; just aiming for accurate CPU instructions and playable games.
 
-Currently tested + playable with Tetris and Kirby's Dream Land
+Tested + playable with Tetris and Kirby's Dream Land
 
 ## Build
 
