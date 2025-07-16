@@ -6,7 +6,8 @@
 enum MBC{
     NO_MBC = 0,
     MBC1 = 1,
-    MBC2 = 5
+    MBC2 = 5,
+    MBC5 = 0x19
 };
 
 typedef struct MBC1 {

@@ -96,7 +96,7 @@ int main(int argc, char* argv[]) {
         
     // Initialize Game Boy state after boot ROM
     
-    FILE *fp = fopen("./roms/sml.gb", "rb");
+    FILE *fp = fopen("./roms/zelda.gb", "rb");
     if (!fp) {
         printf("File not found!\n");
         exit(1);
@@ -117,32 +117,38 @@ int main(int argc, char* argv[]) {
     gameboy_state->pc = 0x100;
     uint8_t colormap_idx = 0;
     uint64_t frames = 0;
+    uint16_t frameskip = 1;
     while (!WindowShouldClose()) {
         // Handle backtick key press to cycle colormaps
         if (IsKeyPressed(KEY_GRAVE)) {
             colormap_idx++;
         }
-        printf("frame %d\n", frames++);
-        for(int scanline = 0; scanline < 154; scanline++){
-            gameboy_state->ram[0xFF44] = scanline;
-            while(gameboy_state->cycles < 456){
-                handle_interrupts(gameboy_state);
-                uint8_t c = step(gameboy_state);
-                gameboy_state->cycles += c;
-                
-                // Generate audio samples for each CPU cycle
-                // float sample = tick_apu(apu, gameboy_state);
-            }
-            if (scanline == 144) {
-                gameboy_state->ram[0xFF0F] |= 1;
-            }
-            gameboy_state->cycles -= 456;
-            if(scanline < 144) {
-                ppu->scanline = scanline;
-                update_ppu(ppu, gameboy_state);
+        if (IsKeyDown(KEY_TAB)) {
+            frameskip = 10;
+        } else {
+            frameskip = 1;
+        }
+        for(int fs = 0; fs < frameskip; fs++){
+            for(int scanline = 0; scanline < 154; scanline++){
+                gameboy_state->ram[0xFF44] = scanline;
+                while(gameboy_state->cycles < 456){
+                    handle_interrupts(gameboy_state);
+                    uint8_t c = step(gameboy_state);
+                    gameboy_state->cycles += c;
+                    
+                    // Generate audio samples for each CPU cycle
+                    // float sample = tick_apu(apu, gameboy_state);
+                }
+                if (scanline == 144) {
+                    gameboy_state->ram[0xFF0F] |= 1;
+                }
+                gameboy_state->cycles -= 456;
+                if(scanline < 144) {
+                    ppu->scanline = scanline;
+                    update_ppu(ppu, gameboy_state);
+                }
             }
         }
-
         // Convert PPU display buffer to raylib texture
         Color pixels[HEIGHT * WIDTH];
         colormap_t c = get_cmap(colormap_idx);

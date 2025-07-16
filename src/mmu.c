@@ -62,6 +62,9 @@ void update_joypad(gb_t* s){
 
 uint8_t get_mem(gb_t* s, uint16_t addr) {
     if (s->test_mode) return s->ram[addr];
+    if(addr < 0xC000){
+        return (*(s->mmu->mbc_fn))(s, addr, 0, 0);
+    }
     if((0xE000 <= addr) && (addr < 0xFE00)) { // Echo RAM
         return s->ram[addr-0x2000];
     }
@@ -90,12 +93,12 @@ void set_mem(gb_t* s, uint16_t addr, uint8_t value) {
         return;
     }
     if(addr < 0x8000){ // ROM -- can't set
+        // uint8_t bank_no = value & 0x1F;
+        // if(bank_no == 0) bank_no = 1;
+        // memcpy(s->ram+0x4000, s->rom+(0x4000*bank_no), 0x4000); 
         (*(s->mmu->mbc_fn))(s, addr, value, 1);
         return;
     }
-    // else if((0xA000 <= addr) && (addr < 0xC000)) { // cart RAM
-    //     return;
-    // }
     else if((0xE000 <= addr) && (addr < 0xFE00)) { // Echo RAM
         s->ram[addr-0x2000] = value;
     }
