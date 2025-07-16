@@ -12,8 +12,8 @@ enum MBC{
 
 typedef struct MBC1 {
     uint8_t rambanks[8][0x2000];
-    uint8_t current_rombank;
-    uint8_t current_rambank;
+    uint16_t current_rombank;
+    uint16_t current_rambank;
     uint8_t bank_mode_select; 
 } mbc1_t;
 

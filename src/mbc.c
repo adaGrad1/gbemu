@@ -69,6 +69,45 @@ uint8_t mbc1(gb_t* s, uint16_t addr, uint8_t value, uint8_t write) {
     }
 }
 
+
+uint8_t mbc5(gb_t* s, uint16_t addr, uint8_t value, uint8_t write) {
+    mbc1_t* mbc = (mbc1_t*)s->mmu->mbc;
+    if(mbc == 0){
+        printf("Init MBC-1\n");
+        mbc = calloc(1, sizeof(mbc1_t));
+        if(n_rambanks(s) == 0) {
+            mbc->bank_mode_select = 1; // no RAM -- assume we are indexing upper bits of ROM.
+        }
+        s->mmu->mbc = mbc;
+    }
+    if(write) {
+        if((0x0000 <= addr) && (addr < 0x2000)) 0;
+        else if((0x2000 <= addr) && (addr < 0x3000)) { // ROMBank switch
+            mbc->current_rombank &= 0xFF00;
+            mbc->current_rombank |= (value & 0xFF);
+            mbc->current_rombank = mbc->current_rombank % n_rombanks(s);
+            printf("ROMBANK: %d\n", mbc->current_rombank);
+            memcpy(s->ram+0x4000, s->rom+(0x4000*(mbc->current_rombank)), 0x4000);
+        }
+        else if((0x3000 <= addr) && (addr < 0x4000)) { // ROMBank switch
+            mbc->current_rombank &= 0x00FF;
+            mbc->current_rombank |= (value & 0x1) << 8;
+            mbc->current_rombank = mbc->current_rombank % n_rombanks(s);
+            printf("ROMBANK: %d\n", mbc->current_rombank);
+            memcpy(s->ram+0x4000, s->rom+(0x4000*(mbc->current_rombank)), 0x4000);
+        }
+        else if((0x4000 <= addr) && (addr < 0x6000)) { 
+            uint8_t bank_no = value & 0x0F;
+            memcpy(mbc->rambanks[mbc->current_rambank], &(s->ram[0xA000]), 0x2000);
+            mbc->current_rambank = bank_no;
+            memcpy(s->ram+0xA000, mbc->rambanks[mbc->current_rambank], 0x2000);
+        }
+    } else {
+        return s->ram[addr];
+    }
+}
+
+
 void mbc_init(gb_t* s){
     switch(s->rom[0x0147]){
         case NO_MBC:
@@ -89,7 +128,7 @@ void mbc_init(gb_t* s){
         case MBC5+4:
         case MBC5+5:
             printf("MBC5\n");
-            s->mmu->mbc_fn = &mbc1;
+            s->mmu->mbc_fn = &mbc5;
             break;
         default:
             printf("Error: Unknown membank %x!\n", s->ram[0x0147]);
