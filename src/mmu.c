@@ -1,10 +1,15 @@
 #include <raylib.h>
 #include "mmu.h"
+#include "mbc.h"
 #include "instr_helpers.h"
+#include "main.h"
+
 
 void mmu_init(gb_t* s){
     s->sp = 0xFFFE;
     memcpy(s->ram, s->rom, 0x8000); 
+    s->mmu = malloc(sizeof(mmu_t));
+    mbc_init(s);
 }
 
 const uint16_t freqs[] = {256, 4, 16, 64};
@@ -60,7 +65,7 @@ void update_joypad(gb_t* s){
 uint8_t get_mem(gb_t* s, uint16_t addr) {
     if (s->test_mode) return s->ram[addr];
     if((0xE000 <= addr) && (addr < 0xFE00)) { // Echo RAM
-        return s->ram[addr-0x2000];
+        return get_mem(s, addr-0x2000);
     }
     else if((addr >= 0xFF00) && (addr < 0xFF80)) { // MMIO
         // TODO serial transfer
@@ -82,34 +87,16 @@ uint8_t get_mem(gb_t* s, uint16_t addr) {
 
 
 
-enum MBC{
-NO_MBC = 0,
-MBC1 = 1,
-MBC2 = 5
-};
 
 void set_mem(gb_t* s, uint16_t addr, uint8_t value) {
     if (s->test_mode){
         s->ram[addr] = value;
         return;
     }
-    if(addr < 0x8000){ // ROM -- can't set
-        switch(s->ram[0x0147]){
-            case NO_MBC:
-                break;
-            case MBC1:
-                uint8_t bank_no = value & 0x1F;
-                if(bank_no == 0) bank_no = 1;
-                memcpy(s->ram+0x4000, s->rom+(0x4000*bank_no), 0x4000); 
-                break;
-            default:
-                printf("UNKNOWN MEMBANK!!!\n");
-        }
+    if(addr < 0xC000){ // ROM or cart RAM -- pass to MBC
+        (*s->mmu->mbc_fn)(s, addr, value, 1);
         return;
     }
-    // else if((0xA000 <= addr) && (addr < 0xC000)) { // cart RAM
-    //     return;
-    // }
     else if((0xE000 <= addr) && (addr < 0xFE00)) { // Echo RAM
         s->ram[addr-0x2000] = value;
     }

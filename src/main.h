@@ -4,6 +4,8 @@
 #define GBR_LEN 0x10000 /* 4096 */
 #include <stdlib.h>
 
+typedef struct MMU mmu_t;
+
 enum REG_IDX {
 RA = 0,
 RF,
@@ -25,6 +27,7 @@ typedef struct gbstate {
     unsigned char reg[REG_LEN];
     unsigned char ram[GBR_LEN];
     unsigned char rom[1 << 20];
+    mmu_t* mmu;
     uint8_t test_mode;
 } gb_t;
 

@@ -578,4 +578,3 @@ uint16_t ld_ia_sp(uint8_t instr, gb_t *s) {
     set_mem(s, addr+1, s->sp >> 8);
     return 5;
 }
-

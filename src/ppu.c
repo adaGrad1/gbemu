@@ -40,8 +40,6 @@ void vblank(ppu_t* p){
 void update_ppu(ppu_t* p, gb_t* s){
     p->viewport_y = (s->ram[0xFF42]);
     p->viewport_x = (s->ram[0xFF43]);
-    if(p->scanline == 0){vblank(p); printf("\n");}
-    printf("%x:%x ", p->scanline, p->viewport_x);
     uint8_t lcdc = s->ram[0xFF40];
 
     s->ram[0xFF44] = p->scanline;

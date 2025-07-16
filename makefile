@@ -15,7 +15,7 @@ endif
 
 build: skeleton gbemu
 
-gbemu: gbemu.o cjson.o jtest.o json_test.o cpu.o util.o instr.o instr_helpers.o ppu.o mmu.o apu.o
+gbemu: gbemu.o cjson.o jtest.o json_test.o cpu.o util.o instr.o instr_helpers.o ppu.o mmu.o apu.o mbc.o
 	$(CC) $(CFLAGS) -o $(BUILD_DIR)/$@ $(BUILD_DIR)/objs/gbemu.o \
 		$(BUILD_DIR)/objs/cjson.o \
 		$(BUILD_DIR)/objs/jtest.o \
@@ -26,7 +26,8 @@ gbemu: gbemu.o cjson.o jtest.o json_test.o cpu.o util.o instr.o instr_helpers.o 
 		$(BUILD_DIR)/objs/instr_helpers.o \
 		$(BUILD_DIR)/objs/ppu.o \
 		$(BUILD_DIR)/objs/mmu.o \
-		$(BUILD_DIR)/objs/apu.o
+		$(BUILD_DIR)/objs/apu.o \
+		$(BUILD_DIR)/objs/mbc.o
 
 
 instr.o: src/instr.c
@@ -61,6 +62,9 @@ mmu.o: src/mmu.c
 	$(CC) $(CFLAGS) -c -o $(BUILD_DIR)/objs/$@ $<
 
 apu.o: src/apu.c
+	$(CC) $(CFLAGS) -c -o $(BUILD_DIR)/objs/$@ $<
+
+mbc.o: src/mbc.c
 	$(CC) $(CFLAGS) -c -o $(BUILD_DIR)/objs/$@ $<
 
 skeleton:

@@ -34,6 +34,26 @@ struct dim {
     size_t w;
 };
 
+typedef struct colormap {
+    uint8_t pixel_vals[4][3] ;
+} colormap_t;
+
+colormap_t colormap(uint8_t idx){
+    colormap_t toret = {0};
+    switch(idx % 4){
+        case 0: // Amber
+            return (colormap_t) {
+                pixel_vals: {
+                    {255, 191, 0},   // Bright amber (pixel_val 0)
+                    {204, 153, 0},   // Medium amber (pixel_val 1) 
+                    {102, 76, 0},    // Dark amber (pixel_val 2)
+                    {0, 0, 0}        // Black (pixel_val 3)
+                }
+            };
+
+    }
+}
+
 int main(int argc, char* argv[]) {
     if (argc > 1 && !strcmp(argv[1], "test")){
         json_test_main(argc-1, argv+1);
@@ -46,11 +66,11 @@ int main(int argc, char* argv[]) {
     gb_t *gameboy_state = calloc(1, sizeof(gb_t));
     ppu_t *ppu = calloc(1, sizeof(ppu_t));
     apu_t *apu = calloc(1, sizeof(apu_t));
-    init_apu(apu);
+    // init_apu(apu);
         
     // Initialize Game Boy state after boot ROM
     
-    FILE *fp = fopen("./roms/kirby.gb", "rb");
+    FILE *fp = fopen("./roms/tetris.gb", "rb");
     if (!fp) {
         printf("File not found!\n");
         exit(1);
@@ -69,6 +89,7 @@ int main(int argc, char* argv[]) {
     Texture2D ppu_texture = LoadTextureFromImage(ppu_image);
     UnloadImage(ppu_image);
     gameboy_state->pc = 0x100;
+    uint8_t colormap_idx = 0;
     while (!WindowShouldClose()) {
         for(int scanline = 0; scanline < 154; scanline++){
             gameboy_state->ram[0xFF44] = scanline;
@@ -78,7 +99,7 @@ int main(int argc, char* argv[]) {
                 gameboy_state->cycles += c;
                 
                 // Generate audio samples for each CPU cycle
-                float sample = tick_apu(apu, gameboy_state);
+                // float sample = tick_apu(apu, gameboy_state);
             }
             if (scanline == 144) {
                 gameboy_state->ram[0xFF0F] |= 1;
@@ -96,8 +117,14 @@ int main(int argc, char* argv[]) {
             for (int x = 0; x < WIDTH; x++) {
                 uint8_t pixel_val = ppu->display[y][x];
                 // Convert Game Boy 2-bit color to grayscale
-                uint8_t gray_val = 255 - (pixel_val * 85); // 0->255, 1->170, 2->85, 3->0
-                pixels[y * WIDTH + x] = (Color){ gray_val, gray_val, gray_val, 255 };
+                // Classic amber monochrome palette: bright orange -> dark orange -> black
+
+                pixels[y * WIDTH + x] = (Color){ 
+                    colormap[pixel_val][0], 
+                    colormap[pixel_val][1], 
+                    colormap[pixel_val][2], 
+                    255 
+                };
             }
         }
         UpdateTexture(ppu_texture, pixels);
