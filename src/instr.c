@@ -27,7 +27,6 @@ uint16_t incdec_16(uint8_t instr, gb_t *s) {
     return 2;
 }
 
-
 uint16_t incdec(uint8_t instr, gb_t *s) {
     uint8_t reg_idx = (instr >> 3) & 0x07;
     int8_t delta = 1 - 2 * (instr & 0x01);
@@ -45,8 +44,6 @@ uint16_t incdec(uint8_t instr, gb_t *s) {
     set_flags(s, !sum, delta<0, hc, LEAVE_BIT_AS_IS);
     return cycles-1;
 }
-
-
 uint16_t ld_ext(uint8_t instr, gb_t *s) {
     // which pair of registers to load -- BC / DE / HL
 

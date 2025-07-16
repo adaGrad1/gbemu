@@ -31,7 +31,7 @@ void update_timer(gb_t* s, uint16_t cycles_passed){
     s->ram[0xFF04] += get_ticks(s->cycles_total, cycles_passed, 256); // DIV
     uint8_t update_tima = get_bit(get_mem(s, 0xFF07), 2);
     if (update_tima){
-        uint16_t timer_wavelen = freqs[get_mem(s, 0xFF07), 2 & 0x03];
+        uint16_t timer_wavelen = freqs[get_mem(s, 0xFF07) & 0x03];
         uint16_t tima_ticks = get_ticks(s->cycles_total, cycles_passed, timer_wavelen);
         if (tima_ticks + get_mem(s, 0xFF05) > 0xFF){
             s->ram[0xFF05] = s->ram[0xFF06] + tima_ticks + s->ram[0xFF05]; // set to modulo
@@ -64,7 +64,9 @@ void update_joypad(gb_t* s){
 
 uint8_t get_mem(gb_t* s, uint16_t addr) {
     if (s->test_mode) return s->ram[addr];
-    if((0xE000 <= addr) && (addr < 0xFE00)) { // Echo RAM
+    if(addr < 0xC000){
+        return (*s->mmu->mbc_fn)(s, addr, 0, 0);
+    } else if((0xE000 <= addr) && (addr < 0xFE00)) { // Echo RAM
         return get_mem(s, addr-0x2000);
     }
     else if((addr >= 0xFF00) && (addr < 0xFF80)) { // MMIO
@@ -76,7 +78,6 @@ uint8_t get_mem(gb_t* s, uint16_t addr) {
         // TODO probably more https://gbdev.io/pandocs/Memory_Map.html#io-ranges
         if (addr == 0xFF00) {
             update_joypad(s);
-        } else if (addr == 0xFF46){
         } else if (addr == 0xFF46){
             oam_dma(s);
         }

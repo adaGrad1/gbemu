@@ -52,9 +52,8 @@ void update_ppu(ppu_t* p, gb_t* s){
     uint8_t do_interrupt = 0x00;
 
     if(get_bit(s->ram[0xFF41], 6)){
-        printf("%x\n", s->ram[0xFF45]);
         do_interrupt = s->ram[0xFF44] == s->ram[0xFF45];
-        if(do_interrupt) printf("doing scanline int!\n");
+        // if(do_interrupt) printf("doing scanline int!\n");
     } else if(get_bit(s->ram[0xFF41], 5)){
         printf("looking for an interrupt that will never ever trigger because my PPU runs once per scanline!!\n");
         do_interrupt = (s->ram[0xFF41] & 3) == 2;

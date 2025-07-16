@@ -35,22 +35,48 @@ struct dim {
 };
 
 typedef struct colormap {
-    uint8_t pixel_vals[4][3] ;
+    uint8_t map[4][3] ;
 } colormap_t;
 
-colormap_t colormap(uint8_t idx){
+colormap_t get_cmap(uint8_t idx){
     colormap_t toret = {0};
     switch(idx % 4){
         case 0: // Amber
             return (colormap_t) {
-                pixel_vals: {
+                map: {
                     {255, 191, 0},   // Bright amber (pixel_val 0)
                     {204, 153, 0},   // Medium amber (pixel_val 1) 
                     {102, 76, 0},    // Dark amber (pixel_val 2)
                     {0, 0, 0}        // Black (pixel_val 3)
                 }
             };
-
+        case 1: // Classic Game Boy Green
+            return (colormap_t) {
+                map: {
+                    {155, 188, 15},  // Lightest green (pixel_val 0)
+                    {139, 172, 15},  // Light green (pixel_val 1)
+                    {48, 98, 48},    // Dark green (pixel_val 2)
+                    {15, 56, 15}     // Darkest green (pixel_val 3)
+                }
+            };
+        case 2: // Game Boy Light Off-White
+            return (colormap_t) {
+                map: {
+                    {248, 248, 220}, // Off-white (pixel_val 0)
+                    {224, 224, 204}, // Light gray (pixel_val 1)
+                    {136, 136, 128}, // Medium gray (pixel_val 2)
+                    {52, 52, 48}     // Dark gray (pixel_val 3)
+                }
+            };
+        case 3: // Blue Tint
+            return (colormap_t) {
+                map: {
+                    {224, 248, 255}, // Light blue-white (pixel_val 0)
+                    {176, 196, 222}, // Light blue-gray (pixel_val 1)
+                    {72, 108, 144},  // Medium blue (pixel_val 2)
+                    {24, 36, 48}     // Dark blue (pixel_val 3)
+                }
+            };
     }
 }
 
@@ -70,7 +96,7 @@ int main(int argc, char* argv[]) {
         
     // Initialize Game Boy state after boot ROM
     
-    FILE *fp = fopen("./roms/tetris.gb", "rb");
+    FILE *fp = fopen("./roms/sml.gb", "rb");
     if (!fp) {
         printf("File not found!\n");
         exit(1);
@@ -90,7 +116,13 @@ int main(int argc, char* argv[]) {
     UnloadImage(ppu_image);
     gameboy_state->pc = 0x100;
     uint8_t colormap_idx = 0;
+    uint64_t frames = 0;
     while (!WindowShouldClose()) {
+        // Handle backtick key press to cycle colormaps
+        if (IsKeyPressed(KEY_GRAVE)) {
+            colormap_idx++;
+        }
+        printf("frame %d\n", frames++);
         for(int scanline = 0; scanline < 154; scanline++){
             gameboy_state->ram[0xFF44] = scanline;
             while(gameboy_state->cycles < 456){
@@ -113,6 +145,7 @@ int main(int argc, char* argv[]) {
 
         // Convert PPU display buffer to raylib texture
         Color pixels[HEIGHT * WIDTH];
+        colormap_t c = get_cmap(colormap_idx);
         for (int y = 0; y < HEIGHT; y++) {
             for (int x = 0; x < WIDTH; x++) {
                 uint8_t pixel_val = ppu->display[y][x];
@@ -120,9 +153,9 @@ int main(int argc, char* argv[]) {
                 // Classic amber monochrome palette: bright orange -> dark orange -> black
 
                 pixels[y * WIDTH + x] = (Color){ 
-                    colormap[pixel_val][0], 
-                    colormap[pixel_val][1], 
-                    colormap[pixel_val][2], 
+                    c.map[pixel_val][0], 
+                    c.map[pixel_val][1], 
+                    c.map[pixel_val][2], 
                     255 
                 };
             }
