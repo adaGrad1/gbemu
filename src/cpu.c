@@ -29,6 +29,7 @@ void handle_interrupts(gb_t *s){
 uint16_t step(gb_t *s) {
     uint8_t instr = s->ram[s->pc++];
     uint16_t r;
+    // printf("%4x: %2x\n", s->pc-1, instr);
     if      mop(instr, 0x00, 0xFF) r=1;
     else if mop(instr, 0xFB, 0xFF) r=ei(instr, s);
     else if mop(instr, 0x08, 0xFF) r=ld_ia_sp(instr, s); // TODO

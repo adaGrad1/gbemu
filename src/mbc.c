@@ -33,40 +33,44 @@ uint8_t mbc1(gb_t* s, uint16_t addr, uint8_t value, uint8_t write) {
         }
         s->mmu->mbc = mbc;
     }
+    // printf("MBC1! %x %x %x %x\n", s, addr, value, write);
+    // exit(0);
     if(write) {
         if((0x0000 <= addr) && (addr < 0x2000)) 0;
         if((0x2000 <= addr) && (addr < 0x4000)) { // ROMBank switch
             // this preserves a bug in the original gameboy where passing, say, 0x80 would allow mapping bank 0 here.
-            if(value == 0) value = 1;
-            mbc->current_rombank &= 0xE0;
-            mbc->current_rombank |= (value & 0x1F);
-            mbc->current_rombank = mbc->current_rombank % n_rombanks(s);
-            printf("ROMBANK: %d\n", mbc->current_rombank);
-
-            memcpy(s->ram+0x4000, s->rom+(0x4000*(mbc->current_rombank)), 0x4000); 
+            uint8_t bank_no = value & 0x1F;
+            if(bank_no == 0) bank_no = 1;
+            memcpy(s->ram+0x4000, s->rom+(0x4000*bank_no), 0x4000); 
+            // if(value == 0) value = 1;
+            // mbc->current_rombank &= 0xE0;
+            // mbc->current_rombank |= (value & 0x1F);
+            // mbc->current_rombank = mbc->current_rombank % n_rombanks(s);
+            // printf("ROMBANK: %d\n", mbc->current_rombank);
+            // memcpy(s->ram+0x4000, s->rom+(0x4000*(mbc->current_rombank)), 0x4000);
+            // printf("%x\n", s->ram[0x4000]);
         }
-        if((0x4000 <= addr) && (addr < 0x6000)) { 
-            uint8_t bank_no = value & 0x03;
-            if (mbc->bank_mode_select) { // upper bits ROMBank switch
-                printf("UPPER ROMBANK SWITCH\n");
-                mbc->current_rombank &= 0x1F;
-                mbc->current_rombank |= (value << 5);
-                mbc->current_rombank = mbc->current_rombank % n_rombanks(s);
-                printf("%d\n", mbc->current_rombank);
-                memcpy(s->ram+0x4000, s->rom+(0x4000*(mbc->current_rombank)), 0x4000); 
-            }
-            else { // RAMBank switch
-                printf("RAMBANK SWITCH\n");
-                memcpy(mbc->rambanks[mbc->current_rambank], &(s->ram[0xA000]), 0x2000);
-                mbc->current_rambank = bank_no;
-                memcpy(&(s->ram[0xA000]), mbc->rambanks[mbc->current_rambank], 0x2000);
-            }
-        }
-        if((0x6000 <= addr) && (addr < 0x8000)) { // bank mode switch
-            if(n_rambanks(s) > 0 && n_rombanks(s) > 32){ // we are even in a multi-bank situation
-                mbc->bank_mode_select = value;
-            }
-        }
+        // if((0x4000 <= addr) && (addr < 0x6000)) { 
+        //     uint8_t bank_no = value & 0x03;
+        //     if (mbc->bank_mode_select) { // upper bits ROMBank switch
+        //         printf("UPPER ROMBANK SWITCH\n");
+        //         mbc->current_rombank &= 0x1F;
+        //         mbc->current_rombank |= (value << 5);
+        //         mbc->current_rombank = mbc->current_rombank % n_rombanks(s);
+        //         memcpy(s->ram+0x4000, s->rom+(0x4000*(mbc->current_rombank)), 0x4000); 
+        //     }
+        //     else { // RAMBank switch
+        //         printf("RAMBANK SWITCH\n");
+        //         memcpy(mbc->rambanks[mbc->current_rambank], &(s->ram[0xA000]), 0x2000);
+        //         mbc->current_rambank = bank_no;
+        //         memcpy(s->ram+0xA000, mbc->rambanks[mbc->current_rambank], 0x2000);
+        //     }
+        // }
+        // if((0x6000 <= addr) && (addr < 0x8000)) { // bank mode switch
+        //     if(n_rambanks(s) > 0 && n_rombanks(s) > 32){ // we are even in a multi-bank situation
+        //         mbc->bank_mode_select = value;
+        //     }
+        // }
     } else {
         return s->ram[addr];
     }
@@ -84,7 +88,6 @@ void mbc_init(gb_t* s){
         case MBC1+2:
             printf("MBC1\n");
             s->mmu->mbc_fn = &mbc1;
-            printf("ASDG");
             break;
         default:
             printf("Error: Unknown membank %x!\n", s->ram[0x0147]);

@@ -2,13 +2,11 @@
 #include "mmu.h"
 #include "mbc.h"
 #include "instr_helpers.h"
-#include "main.h"
-
 
 void mmu_init(gb_t* s){
     s->sp = 0xFFFE;
     memcpy(s->ram, s->rom, 0x8000); 
-    s->mmu = malloc(sizeof(mmu_t));
+    s->mmu = calloc(1, sizeof(mmu_t));
     mbc_init(s);
 }
 
@@ -31,7 +29,7 @@ void update_timer(gb_t* s, uint16_t cycles_passed){
     s->ram[0xFF04] += get_ticks(s->cycles_total, cycles_passed, 256); // DIV
     uint8_t update_tima = get_bit(get_mem(s, 0xFF07), 2);
     if (update_tima){
-        uint16_t timer_wavelen = freqs[get_mem(s, 0xFF07) & 0x03];
+        uint16_t timer_wavelen = freqs[get_mem(s, 0xFF07), 2 & 0x03];
         uint16_t tima_ticks = get_ticks(s->cycles_total, cycles_passed, timer_wavelen);
         if (tima_ticks + get_mem(s, 0xFF05) > 0xFF){
             s->ram[0xFF05] = s->ram[0xFF06] + tima_ticks + s->ram[0xFF05]; // set to modulo
@@ -64,10 +62,8 @@ void update_joypad(gb_t* s){
 
 uint8_t get_mem(gb_t* s, uint16_t addr) {
     if (s->test_mode) return s->ram[addr];
-    if(addr < 0xC000){
-        return (*s->mmu->mbc_fn)(s, addr, 0, 0);
-    } else if((0xE000 <= addr) && (addr < 0xFE00)) { // Echo RAM
-        return get_mem(s, addr-0x2000);
+    if((0xE000 <= addr) && (addr < 0xFE00)) { // Echo RAM
+        return s->ram[addr-0x2000];
     }
     else if((addr >= 0xFF00) && (addr < 0xFF80)) { // MMIO
         // TODO serial transfer
@@ -79,6 +75,7 @@ uint8_t get_mem(gb_t* s, uint16_t addr) {
         if (addr == 0xFF00) {
             update_joypad(s);
         } else if (addr == 0xFF46){
+        } else if (addr == 0xFF46){
             oam_dma(s);
         }
     }
@@ -87,17 +84,18 @@ uint8_t get_mem(gb_t* s, uint16_t addr) {
 
 
 
-
-
 void set_mem(gb_t* s, uint16_t addr, uint8_t value) {
     if (s->test_mode){
         s->ram[addr] = value;
         return;
     }
-    if(addr < 0xC000){ // ROM or cart RAM -- pass to MBC
-        (*s->mmu->mbc_fn)(s, addr, value, 1);
+    if(addr < 0x8000){ // ROM -- can't set
+        (*(s->mmu->mbc_fn))(s, addr, value, 1);
         return;
     }
+    // else if((0xA000 <= addr) && (addr < 0xC000)) { // cart RAM
+    //     return;
+    // }
     else if((0xE000 <= addr) && (addr < 0xFE00)) { // Echo RAM
         s->ram[addr-0x2000] = value;
     }
