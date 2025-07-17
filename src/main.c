@@ -43,12 +43,12 @@ colormap_t get_cmap(uint8_t idx){
     switch(idx % 4){
         case 0: // Amber
             return (colormap_t) {
-                map: {
-                    {255, 191, 0},   // Bright amber (pixel_val 0)
-                    {204, 153, 0},   // Medium amber (pixel_val 1) 
-                    {102, 76, 0},    // Dark amber (pixel_val 2)
-                    {0, 0, 0}        // Black (pixel_val 3)
-                }
+            map: {
+                {255, 160, 0},   // Bright orange (pixel_val 0)
+                {204, 130, 0},   // Medium orange (pixel_val 1) 
+                {102, 70, 0},    // Dark orange (pixel_val 2)
+                {0, 0, 0}        // Black (pixel_val 3)
+            }
             };
         case 1: // Classic Game Boy Green
             return (colormap_t) {
@@ -108,7 +108,7 @@ int main(int argc, char* argv[]) {
     int bytesRead =
       fread(gameboy_state->rom, 1, 1 << 24, fp);
     fclose(fp);
-    mmu_init(gameboy_state);
+    mmu_init(gameboy_state, argv[1]);
 
     InitWindow(pdim.w, pdim.h, WINDOW_TITLE);
     SetTargetFPS(TARGET_FPS);
@@ -133,6 +133,7 @@ int main(int argc, char* argv[]) {
             frameskip = 1;
         }
         for(int fs = 0; fs < frameskip; fs++){
+            frames++;
             for(int scanline = 0; scanline < 154; scanline++){
                 gameboy_state->ram[0xFF44] = scanline;
                 while(gameboy_state->cycles < 456){
@@ -152,6 +153,7 @@ int main(int argc, char* argv[]) {
                     update_ppu(ppu, gameboy_state);
                 }
             }
+            if((frames % 10) == 0) save_persistent(gameboy_state, argv[1]);
         }
         // Convert PPU display buffer to raylib texture
         Color pixels[HEIGHT * WIDTH];

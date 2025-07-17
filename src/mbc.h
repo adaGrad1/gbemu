@@ -10,12 +10,13 @@ enum MBC{
     MBC5 = 0x19
 };
 
-typedef struct MBC1 {
+typedef struct MBCT {
     uint8_t rambanks[8][0x2000];
+    uint16_t has_battery;
     uint16_t current_rombank;
     uint16_t current_rambank;
     uint8_t bank_mode_select; 
-} mbc1_t;
+} mbc_t;
 
 uint8_t no_mbc(gb_t* s, uint16_t addr, uint8_t value, uint8_t write);
 uint8_t mbc1(gb_t* s, uint16_t addr, uint8_t value, uint8_t write);

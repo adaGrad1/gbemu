@@ -3,11 +3,35 @@
 #include "mbc.h"
 #include "instr_helpers.h"
 
-void mmu_init(gb_t* s){
+void mmu_init(gb_t* s, char* rom_path){
     s->sp = 0xFFFE;
     memcpy(s->ram, s->rom, 0x8000); 
     s->mmu = calloc(1, sizeof(mmu_t));
     mbc_init(s);
+    char* savepath = calloc(1, sizeof(rom_path)+10);
+    strcpy(savepath, rom_path);
+    strcat(savepath, ".save");
+    FILE* f = fopen(savepath, "rb");
+    if (f){
+        fread(s->mmu->mbc->rambanks, sizeof(s->mmu->mbc->rambanks), 1, f);
+        fclose(f);
+    }
+    printf("RAMBANK LOADED AMOUNT: %x. At 0x0454: %x\n", sizeof(s->mmu->mbc->rambanks), s->mmu->mbc->rambanks[0][0x454]);
+}
+
+void save_persistent(gb_t* s, char* rom_path){
+    // return;
+    if (s->mmu->mbc->has_battery){
+        printf("SAVE PERSISTENT\n");
+        char* savepath = calloc(1, sizeof(rom_path)+10);
+        strcpy(savepath, rom_path);
+        strcat(savepath, ".save");
+        printf("%s\n", savepath);
+        FILE* f = fopen(savepath, "wb");
+        fwrite(s->mmu->mbc->rambanks, 1, sizeof(s->mmu->mbc->rambanks), f);
+        fclose(f);
+        free(savepath);
+    }
 }
 
 const uint16_t freqs[] = {256, 4, 16, 64};
