@@ -9,6 +9,7 @@
 
 void handle_interrupts(gb_t *s){
   if (s->ei && (s->ram[0xFF0F] & s->ram[0xFFFF])) {
+      s->halt_mode = 0;
       s->ram[--(s->sp)] = s->pc >> 8;
       s->ram[--(s->sp)] = s->pc & 0xFF;
       if (s->ram[0xFF0F] & 1) {
@@ -39,11 +40,14 @@ uint16_t print_cpu_diags(gb_t* s){
     printf("%x ", s->ram[s->pc+i]);
   }
   printf("IF: %2x, IE: %2x, SL: %2x\n", s->ram[0xFF0F], s->ram[0xFFFF], s->ram[0xFF44]);
-  printf("\n");
+  uint16_t HL = s->reg[RH]; HL <<= 8; HL |= s->reg[RL];
+
+  printf("Regs: F=%2x H=%2x L=%2x, (HL)=%2x\n", s->reg[RF], s->reg[RH], s->reg[RL], s->ram[HL]);
 }
 
 uint16_t step(gb_t *s) {
-    // if(rand() % 5000 == 0) print_cpu_diags(s);
+    if(s->halt_mode) return 1;
+    // if(rand() % 1 == 0) print_cpu_diags(s);
     uint8_t instr = s->ram[s->pc++];
     uint16_t r;
     if      mop(instr, 0x00, 0xFF) r=1;

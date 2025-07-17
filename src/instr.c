@@ -8,7 +8,7 @@
 #define mop(instr, match, mask) ((instr & mask) == match)
 
 #define max(a,b) a > b ? a : b
-uint16_t halt(uint8_t instr, gb_t *s) {return 3;} // TODO reset-related??
+uint16_t halt(uint8_t instr, gb_t *s) {s->halt_mode=1; return 3;}
 
 uint16_t incdec_16(uint8_t instr, gb_t *s) {
     uint8_t reg_idx = 2 * ((instr >> 4) & 0x03);
