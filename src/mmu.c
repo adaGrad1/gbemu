@@ -29,7 +29,7 @@ void update_timer(gb_t* s, uint16_t cycles_passed){
     s->ram[0xFF04] += get_ticks(s->cycles_total, cycles_passed, 256); // DIV
     uint8_t update_tima = get_bit(get_mem(s, 0xFF07), 2);
     if (update_tima){
-        uint16_t timer_wavelen = freqs[get_mem(s, 0xFF07), 2 & 0x03];
+        uint16_t timer_wavelen = freqs[get_mem(s, 0xFF07) & 0x03];
         uint16_t tima_ticks = get_ticks(s->cycles_total, cycles_passed, timer_wavelen);
         if (tima_ticks + get_mem(s, 0xFF05) > 0xFF){
             s->ram[0xFF05] = s->ram[0xFF06] + tima_ticks + s->ram[0xFF05]; // set to modulo
@@ -41,6 +41,7 @@ void update_timer(gb_t* s, uint16_t cycles_passed){
 
 void update_joypad(gb_t* s){
     uint8_t joypad_flags = (s->ram[0xFF00] >> 4) & 0x3;
+    uint8_t prev_joypad = s->ram[0xFF00];
     switch(joypad_flags){
         case 0:
         case 3:
@@ -58,6 +59,7 @@ void update_joypad(gb_t* s){
             set_bit(s->ram[0xFF00], 2, !IsKeyDown(KEY_RIGHT_SHIFT));
             set_bit(s->ram[0xFF00], 3, !IsKeyDown(KEY_ENTER));
     }
+    if (s->ram[0xFF00] != prev_joypad) set_bit(s->ram[0xFF0F], 4, 1);
 }
 
 uint8_t get_mem(gb_t* s, uint16_t addr) {
@@ -77,7 +79,6 @@ uint8_t get_mem(gb_t* s, uint16_t addr) {
         // TODO probably more https://gbdev.io/pandocs/Memory_Map.html#io-ranges
         if (addr == 0xFF00) {
             update_joypad(s);
-        } else if (addr == 0xFF46){
         } else if (addr == 0xFF46){
             oam_dma(s);
         }

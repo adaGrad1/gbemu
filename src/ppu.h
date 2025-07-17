@@ -17,5 +17,6 @@ typedef struct ppu {
 } ppu_t;
 
 void update_ppu(ppu_t* p, gb_t* s);
+void update_ppu_flags(ppu_t* p, gb_t* s, uint16_t cycles_in_row);
 
 #endif

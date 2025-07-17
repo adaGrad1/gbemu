@@ -81,6 +81,11 @@ colormap_t get_cmap(uint8_t idx){
 }
 
 int main(int argc, char* argv[]) {
+    if(argc < 2) {
+        printf("Please run with an argument!Options:\n\
+    1. run with \"./build/gbemu test\" to run all CPU tests. \"./build/gbemu test 03.json\" will only run opcode 0x03 tests.\n\
+    2. run with \"./build/gbemu path/to/rom.gb\" to run the emulator.");
+    }
     if (argc > 1 && !strcmp(argv[1], "test")){
         json_test_main(argc-1, argv+1);
         exit(0);
@@ -95,14 +100,13 @@ int main(int argc, char* argv[]) {
     // init_apu(apu);
         
     // Initialize Game Boy state after boot ROM
-    
-    FILE *fp = fopen("./roms/zelda.gb", "rb");
+    FILE *fp = fopen(argv[1], "rb");
     if (!fp) {
         printf("File not found!\n");
         exit(1);
     }
     int bytesRead =
-      fread(gameboy_state->rom, 1, 1 << 20, fp);
+      fread(gameboy_state->rom, 1, 1 << 24, fp);
     fclose(fp);
     mmu_init(gameboy_state);
 
@@ -135,7 +139,7 @@ int main(int argc, char* argv[]) {
                     handle_interrupts(gameboy_state);
                     uint8_t c = step(gameboy_state);
                     gameboy_state->cycles += c;
-                    
+                    update_ppu_flags(ppu, gameboy_state, gameboy_state->cycles);
                     // Generate audio samples for each CPU cycle
                     // float sample = tick_apu(apu, gameboy_state);
                 }

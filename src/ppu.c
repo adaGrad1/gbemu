@@ -21,7 +21,7 @@ uint8_t apply_palette(uint8_t idx, uint8_t palette){
 uint8_t draw_8x8_tile(ppu_t* p, uint8_t x_topleft, uint8_t y_topleft, uint8_t src[16], uint8_t palette, uint8_t flip_h, uint8_t flip_v, uint8_t transparency){
     // this is the Y-position of the scanline within the tile
     uint8_t yi = (p->scanline+p->viewport_y) - y_topleft;
-    if (yi >= 8) return 1; // wrong vertical
+    if (yi >= 8) return 1; // tile outside of current scanline
     for(uint8_t xi = 0; xi < 8; xi++){
         uint8_t u = yi;
         if(flip_v) u = 7 - yi;
@@ -36,19 +36,23 @@ uint8_t draw_8x8_tile(ppu_t* p, uint8_t x_topleft, uint8_t y_topleft, uint8_t sr
 void vblank(ppu_t* p){
     memset(p->display, 0, WIDTH * HEIGHT);
 }
+void update_ppu_flags(ppu_t* p, gb_t* s, uint16_t cycles_in_row){
+    s->ram[0xFF41] &= 0xFC;
+    if (p->scanline == 143){
+        s->ram[0xFF41] |= 0x01; // vblank
+    } else {
+        if(cycles_in_row < 80) s->ram[0xFF41] |= 0x2; // OAM scan
+        else if(cycles_in_row < 356) s->ram[0xFF41] |= 0x3; // drawing pixels
+        else s->ram[0xFF41] |= 0x00; // hblank
+    }
 
+}
 void update_ppu(ppu_t* p, gb_t* s){
     p->viewport_y = (s->ram[0xFF42]);
     p->viewport_x = (s->ram[0xFF43]);
     uint8_t lcdc = s->ram[0xFF40];
 
     s->ram[0xFF44] = p->scanline;
-    s->ram[0xFF41] &= 0xFC;
-    if (p->scanline == 143){
-        s->ram[0xFF41] |= 0x01; // vblank
-    } else {
-        s->ram[0xFF41] |= 0x00; // hblank
-    }
     uint8_t do_interrupt = 0x00;
 
     if(get_bit(s->ram[0xFF41], 6)){
@@ -89,19 +93,29 @@ void update_ppu(ppu_t* p, gb_t* s){
         }
 
         if (lcdc & 0x20) { // enable window
-                // uint8_t x_topleft = s->ram[]
-                // uint8_t y = ((uint8_t)(p->scanline+(*p->viewport_y))) >> 3;
-                // for(int x = 0; x < 32; x++) {
-                //     uint16_t tile_idx = s->ram[tile_map_start_addr+32*y+x];
-                //     uint16_t tile_data_addr;
-                //     if(lcdc & 0x10) {
-                //         tile_data_addr = 0x8000 + (tile_idx * 16);
-                //     } else {
-                //         tile_data_addr = 0x9000 + ((int8_t)tile_idx) * 16;
-                //     }
-                //     draw_8x8_tile(p->display, x*8, y*8, &s->ram[tile_data_addr], s->ram[0xFF47]);
-                // }
+            if (lcdc & 0x40) {
+                tile_map_start_addr = 0x9C00;
+            } else {
+                tile_map_start_addr = 0x9800;
+            }
 
+            p->viewport_x = 0;
+            p->viewport_y = 0;  
+            uint8_t y_topleft = s->ram[0xFF4A];
+            uint8_t x_topleft = s->ram[0xFF4B] - 7;
+            int32_t tiley = ((p->scanline - y_topleft)) / 8;
+            if(tiley > 0){
+                for(int tilex = 0; tilex < 32; tilex++) {
+                    uint16_t tile_idx = s->ram[tile_map_start_addr+32*tiley+tilex];
+                    uint16_t tile_data_addr;
+                    if(lcdc & 0x10) {
+                        tile_data_addr = 0x8000 + (tile_idx * 16);
+                    } else {
+                        tile_data_addr = 0x9000 + ((int8_t)tile_idx) * 16;
+                    }
+                    draw_8x8_tile(p->display, x_topleft+tilex*8, y_topleft+tiley*8, &s->ram[tile_data_addr], s->ram[0xFF47], 0, 0, 0);
+                }
+                }
         }
     }
 

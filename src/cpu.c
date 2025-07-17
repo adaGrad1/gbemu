@@ -3,6 +3,7 @@
 #include "instr_helpers.h"
 #include "mmu.h"
 #include <unistd.h>
+#include "mbc.h"
 
 #define mop(instr, match, mask) ((instr & mask) == match)
 
@@ -10,7 +11,6 @@ void handle_interrupts(gb_t *s){
   if (s->ei && (s->ram[0xFF0F] & s->ram[0xFFFF])) {
       s->ram[--(s->sp)] = s->pc >> 8;
       s->ram[--(s->sp)] = s->pc & 0xFF;
-
       if (s->ram[0xFF0F] & 1) {
         s->pc = 0x0040;
         set_bit(s->ram[0xFF0F], 0, 0);
@@ -20,16 +20,32 @@ void handle_interrupts(gb_t *s){
       } else if(s->ram[0xFF0F] & 4) {
         s->pc = 0x0050;
         set_bit(s->ram[0xFF0F], 2, 0);
+      } else if(s->ram[0xFF0F] & 16) {
+        s->pc = 0x0060;
+        set_bit(s->ram[0xFF0F], 4, 0);
       }
+
       s->ei = 0;
   }
 }
 
+uint16_t print_cpu_diags(gb_t* s){
+  printf("PC: %4x. Program: ", s->pc);
+  for(uint8_t i = 0; i < 8; i++){
+    printf("%x ", s->ram[s->pc+i-8]);
+  }
+    printf("|%x| ", s->ram[s->pc]);
+  for(uint8_t i = 1; i < 8; i++){
+    printf("%x ", s->ram[s->pc+i]);
+  }
+  printf("IF: %2x, IE: %2x, SL: %2x\n", s->ram[0xFF0F], s->ram[0xFFFF], s->ram[0xFF44]);
+  printf("\n");
+}
 
 uint16_t step(gb_t *s) {
+    // if(rand() % 5000 == 0) print_cpu_diags(s);
     uint8_t instr = s->ram[s->pc++];
     uint16_t r;
-    // printf("%4x: %2x\n", s->pc-1, instr);
     if      mop(instr, 0x00, 0xFF) r=1;
     else if mop(instr, 0xFB, 0xFF) r=ei(instr, s);
     else if mop(instr, 0x08, 0xFF) r=ld_ia_sp(instr, s); // TODO
