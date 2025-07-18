@@ -58,11 +58,33 @@ uint8_t mbc1(gb_t* s, uint16_t addr, uint8_t value, uint8_t write) {
     }
 }
 
+uint8_t mbc3(gb_t* s, uint16_t addr, uint8_t value, uint8_t write) {
+    mbc_t* mbc = s->mmu->mbc;
+    printf("MCB3 access!\n");
+    if (write) {
+        if((0x2000 <= addr) && (addr < 0x4000)) { // ROMBank switch
+            mbc->current_rombank = value % n_rombanks(s);
+            memcpy(s->ram+0x4000, s->rom+(0x4000*(mbc->current_rombank)), 0x4000);
+        }
+        else if((0x4000 <= addr) && (addr < 0x6000)) { // RAMBank switch
+            if(mbc->current_rambank < 0x08) memcpy(mbc->rambanks[mbc->current_rambank], &(s->ram[0xA000]), 0x2000);
+            mbc->current_rambank = value;
+            if(mbc->current_rambank < 0x08) memcpy(s->ram+0xA000, mbc->rambanks[mbc->current_rambank], 0x2000);
+            else memset(s->ram+0xA000, 1, 0x2000);
+        }
+        printf("ROMBANK: %x RAMBANK: %x", mbc->current_rombank, mbc->current_rambank);
+    } else {
+        if(mbc->current_rambank >= 8) printf("RTC accessed: RAMBank=%x, returned %x\n", mbc->current_rambank, s->ram[addr]);
+        return s->ram[addr];
+    }
+}
+
+
 
 uint8_t mbc5(gb_t* s, uint16_t addr, uint8_t value, uint8_t write) {
     mbc_t* mbc = s->mmu->mbc;
     if(write) {
-        if((0x0000 <= addr) && (addr < 0x2000)) 0;
+        if((0x0000 <= addr) && (addr < 0x2000)) mbc->ram_enabled=((value&0x0F)==0x0A);
         else if((0x2000 <= addr) && (addr < 0x3000)) { // ROMBank switch
             mbc->current_rombank &= 0xFF00;
             mbc->current_rombank |= (value & 0xFF);
@@ -77,11 +99,16 @@ uint8_t mbc5(gb_t* s, uint16_t addr, uint8_t value, uint8_t write) {
         }
         else if((0x4000 <= addr) && (addr < 0x6000)) { 
             uint8_t bank_no = value & 0x0F;
+            printf("Change RAMBANK! %x, %x, %x\n", n_rambanks(s), n_rombanks(s), value);
             memcpy(mbc->rambanks[mbc->current_rambank], &(s->ram[0xA000]), 0x2000);
             mbc->current_rambank = bank_no;
             memcpy(s->ram+0xA000, mbc->rambanks[mbc->current_rambank], 0x2000);
         }
     } else {
+        if(!mbc->ram_enabled && addr > 0x8000){
+            printf("accessing RAM when disabled!\n");
+            return 0;
+        }
         return s->ram[addr];
     }
 }
@@ -112,6 +139,10 @@ void mbc_init(gb_t* s){
         case MBC5+4:
             printf("MBC5\n");
             s->mmu->mbc_fn = &mbc5;
+            break;
+        case MBC3_TIMER_RAM_BATTERY:
+            printf("MBC3\n");
+            s->mmu->mbc_fn = &mbc3;
             break;
         default:
             printf("Error: Unknown membank %x!\n", s->ram[0x0147]);

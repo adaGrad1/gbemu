@@ -47,7 +47,7 @@ uint16_t print_cpu_diags(gb_t* s){
 
 uint16_t step(gb_t *s) {
     if(s->halt_mode) return 1;
-    // if(rand() % 1 == 0) print_cpu_diags(s);
+    // if(rand() % 10 == 0) print_cpu_diags(s);
     uint8_t instr = s->ram[s->pc++];
     uint16_t r;
     if      mop(instr, 0x00, 0xFF) r=1;

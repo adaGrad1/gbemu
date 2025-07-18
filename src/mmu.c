@@ -21,8 +21,10 @@ void mmu_init(gb_t* s, char* rom_path){
 
 void save_persistent(gb_t* s, char* rom_path){
     // return;
-    if (s->mmu->mbc->has_battery){
-        printf("SAVE PERSISTENT\n");
+    mbc_t* mbc = s->mmu->mbc;
+    if (mbc->has_battery){
+        printf("SAVE PERSISTENT!\n");
+        memcpy(mbc->rambanks[mbc->current_rambank], s->ram+0xA000, 0x2000);
         char* savepath = calloc(1, sizeof(rom_path)+10);
         strcpy(savepath, rom_path);
         strcat(savepath, ".save");

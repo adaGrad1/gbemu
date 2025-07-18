@@ -7,7 +7,8 @@ enum MBC{
     NO_MBC = 0,
     MBC1 = 1,
     MBC2 = 5,
-    MBC5 = 0x19
+    MBC5 = 0x19,
+    MBC3_TIMER_RAM_BATTERY = 0x10,
 };
 
 typedef struct MBCT {
@@ -16,6 +17,7 @@ typedef struct MBCT {
     uint16_t current_rombank;
     uint16_t current_rambank;
     uint8_t bank_mode_select; 
+    uint8_t ram_enabled;
 } mbc_t;
 
 uint8_t no_mbc(gb_t* s, uint16_t addr, uint8_t value, uint8_t write);
