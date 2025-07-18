@@ -104,7 +104,7 @@ void update_ppu(ppu_t* p, gb_t* s){
             uint8_t y_topleft = s->ram[0xFF4A];
             uint8_t x_topleft = s->ram[0xFF4B] - 7;
             int32_t tiley = ((p->scanline - y_topleft)) / 8;
-            if(tiley > 0){
+            if(tiley >= 0){
                 for(int tilex = 0; tilex < 32; tilex++) {
                     uint16_t tile_idx = s->ram[tile_map_start_addr+32*tiley+tilex];
                     uint16_t tile_data_addr;
