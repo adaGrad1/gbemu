@@ -21,13 +21,13 @@ REG_LEN,
 typedef struct gbstate {
     uint16_t pc;
     uint16_t sp;
-    uint8_t ei;
+    uint8_t ime;
     uint8_t halt_mode;
     uint64_t cycles;
     uint64_t cycles_total;
     unsigned char reg[REG_LEN];
     unsigned char ram[GBR_LEN];
-    unsigned char rom[1 << 20];
+    unsigned char rom[1 << 24];
     mmu_t* mmu;
     uint8_t test_mode;
 } gb_t;

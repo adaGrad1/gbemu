@@ -8,7 +8,7 @@ void mmu_init(gb_t* s, char* rom_path){
     memcpy(s->ram, s->rom, 0x8000); 
     s->mmu = calloc(1, sizeof(mmu_t));
     mbc_init(s);
-    char* savepath = calloc(1, sizeof(rom_path)+10);
+    char* savepath = calloc(1, strlen(rom_path)+10);
     strcpy(savepath, rom_path);
     strcat(savepath, ".save");
     FILE* f = fopen(savepath, "rb");
@@ -20,19 +20,18 @@ void mmu_init(gb_t* s, char* rom_path){
 }
 
 void save_persistent(gb_t* s, char* rom_path){
-    // return;
     mbc_t* mbc = s->mmu->mbc;
     if (mbc->has_battery){
         printf("SAVE PERSISTENT!\n");
         memcpy(mbc->rambanks[mbc->current_rambank], s->ram+0xA000, 0x2000);
-        char* savepath = calloc(1, sizeof(rom_path)+10);
+        char* savepath = calloc(1, 256);
         strcpy(savepath, rom_path);
         strcat(savepath, ".save");
-        printf("%s\n", savepath);
         FILE* f = fopen(savepath, "wb");
         fwrite(s->mmu->mbc->rambanks, 1, sizeof(s->mmu->mbc->rambanks), f);
         fclose(f);
         free(savepath);
+        printf("SAVEPATH\n");
     }
 }
 

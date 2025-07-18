@@ -133,6 +133,7 @@ int main(int argc, char* argv[]) {
             frameskip = 1;
         }
         for(int fs = 0; fs < frameskip; fs++){
+            printf("%x\n", frames);
             frames++;
             for(int scanline = 0; scanline < 154; scanline++){
                 gameboy_state->ram[0xFF44] = scanline;

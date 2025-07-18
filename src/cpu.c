@@ -8,7 +8,7 @@
 #define mop(instr, match, mask) ((instr & mask) == match)
 
 void handle_interrupts(gb_t *s){
-  if (s->ei && (s->ram[0xFF0F] & s->ram[0xFFFF])) {
+  if (s->ime && (s->ram[0xFF0F] & s->ram[0xFFFF])) {
       s->halt_mode = 0;
       s->ram[--(s->sp)] = s->pc >> 8;
       s->ram[--(s->sp)] = s->pc & 0xFF;
@@ -25,8 +25,7 @@ void handle_interrupts(gb_t *s){
         s->pc = 0x0060;
         set_bit(s->ram[0xFF0F], 4, 0);
       }
-
-      s->ei = 0;
+      s->ime = 0;
   }
 }
 
@@ -39,7 +38,7 @@ uint16_t print_cpu_diags(gb_t* s){
   for(uint8_t i = 1; i < 8; i++){
     printf("%x ", s->ram[s->pc+i]);
   }
-  printf("IF: %2x, IE: %2x, SL: %2x\n", s->ram[0xFF0F], s->ram[0xFFFF], s->ram[0xFF44]);
+  printf("IF: %2x, IE: %2x, IME: %2x, SL: %2x\n", s->ram[0xFF0F], s->ram[0xFFFF], s->ime, s->ram[0xFF44]);
   uint16_t HL = s->reg[RH]; HL <<= 8; HL |= s->reg[RL];
 
   printf("Regs: F=%2x H=%2x L=%2x, (HL)=%2x\n", s->reg[RF], s->reg[RH], s->reg[RL], s->ram[HL]);
@@ -47,7 +46,7 @@ uint16_t print_cpu_diags(gb_t* s){
 
 uint16_t step(gb_t *s) {
     if(s->halt_mode) return 1;
-    // if(rand() % 10 == 0) print_cpu_diags(s);
+    // if(rand() % 1 == 0) print_cpu_diags(s);
     uint8_t instr = s->ram[s->pc++];
     uint16_t r;
     if      mop(instr, 0x00, 0xFF) r=1;

@@ -287,7 +287,7 @@ uint16_t ret(uint8_t instr, gb_t* s) {
 
 uint16_t reti(uint8_t instr, gb_t* s) {
     _ret(s);
-    s->ei = 1;
+    s->ime = 1;
     return 4;
 }
 
@@ -426,12 +426,12 @@ uint16_t jmp(uint8_t instr, gb_t *s){
 
 }
 uint16_t di(uint8_t instr, gb_t *s){
-    s->ei=0;
+    s->ime=0;
     return 1;
 }
 
 uint16_t ei(uint8_t instr, gb_t *s){
-    s->ei=1;
+    s->ime=1;
     return 1;
 }
 
